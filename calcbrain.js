@@ -23,7 +23,6 @@ const typeColors = {
     "Ironclad": "#808a91",
     "Brawler": "#89514E",
     "Normal": "#eadfc1"
-    penis
 };
 
 // Map types to house_#.png indices (adjust the numbers to match your actual files)
