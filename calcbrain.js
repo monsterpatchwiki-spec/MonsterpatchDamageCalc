@@ -1477,7 +1477,7 @@ function importSquad() {
 // --- 4. DAMAGE CALCULATION ZONE ---
 
 // Builds the inner markup for the damage calc zone: attacker/move picker,
-// defender picker, and a result readout. Injected into #damage-calc-zone.
+// defender picker, battle modifiers, and a result readout.
 function createDamageCalcZone() {
     return `
         <div class="dmg-columns">
@@ -1498,6 +1498,14 @@ function createDamageCalcZone() {
                     <option value="2">Slot 2</option>
                     <option value="1">Slot 1</option>
                 </select>
+            </div>
+            <div class="dmg-col dmg-modifiers">
+                <label>MODIFIERS</label>
+                <label class="dmg-check"><input type="checkbox" id="dmg-crit" onchange="calculateDamage()"> Force Crit</label>
+                <label class="dmg-check"><input type="checkbox" id="dmg-shieldripper" onchange="calculateDamage()"> Shield Ripper</label>
+                <label class="dmg-num">Dmg Reduction % <input type="number" id="dmg-reduction" value="0" min="0" max="100" onchange="calculateDamage()"></label>
+                <label class="dmg-num">Bonus Dmg % <input type="number" id="dmg-bonus" value="0" onchange="calculateDamage()"></label>
+                <label class="dmg-num">Def. Tokens <input type="number" id="dmg-tokens" value="0" min="0" onchange="calculateDamage()"></label>
             </div>
             <div class="dmg-col">
                 <label>&nbsp;</label>
@@ -1555,10 +1563,63 @@ function refreshDamageParticipantsIfNeeded(num) {
     if (attackerSel.value == num || defenderSel.value == num) calculateDamage();
 }
 
+function clamp(val, min, max) {
+    return Math.min(max, Math.max(min, val));
+}
+
+function randRange(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+// Reads the finished stat spans (post level/grade/growth/vibe) for a slot.
+function getSlotStats(num) {
+    const stats = {};
+    ['HP', 'ATK', 'MAG', 'DEF', 'RES', 'SPD'].forEach(s => {
+        const el = document.getElementById(`${s}-result-${num}`);
+        stats[s] = el ? (parseInt(el.innerText) || 0) : 0;
+    });
+    return stats;
+}
+
+// Reads a slot's house types straight from monData.
+function getSlotTypes(num) {
+    const monName = document.getElementById(`monSelect-${num}`)?.value;
+    const isSparkly = document.querySelector(`.slot:nth-child(${num}) .sparkle-checkbox`)?.checked;
+    if (!monName || !monData[monName]) return [];
+    const data = isSparkly ? monData[monName].sparkly : monData[monName].normal;
+    return (data.houses || []).filter(h => h);
+}
+
+// Runs the full per-hit damage formula once and returns { damage, didCrit }.
+function calcOneHit(offensiveStat, defensiveStat, movePower, houseMultiplier, stabMultiplier, modifiers) {
+    const scaledPower = movePower * 0.015;
+    let dmg = (offensiveStat * scaledPower) + 2;
+    dmg *= 80 / (80 + defensiveStat);
+    dmg *= randRange(0.9, 1.1);
+    dmg *= houseMultiplier;
+    dmg *= stabMultiplier;
+    dmg *= 1 + (modifiers.bonusDamagePercent / 100);
+
+    // Crit: forced via checkbox, since per-mon crit chance/bonus crit chance
+    // isn't tracked in monData yet.
+    const didCrit = modifiers.forceCrit;
+    if (didCrit) {
+        dmg *= 1.5; // default critDamageMultiplier
+    }
+
+    if (modifiers.shieldRipper) {
+        dmg *= 2;
+    }
+
+    dmg *= (1 - clamp(modifiers.reductionPercent, 0, 100) / 100);
+    dmg *= clamp(1 - modifiers.defTokens * 0.02, 0.1, 1);
+
+    return { damage: Math.max(1, Math.round(dmg)), didCrit };
+}
+
 // Computes and displays estimated damage for the selected attacker/move
-// against the selected defender, using the same base stats (via the
-// *-result-N stat spans) and type effectiveness chart (getMultiplier) as
-// the rest of the builder.
+// against the selected defender, running the full per-hit formula once
+// per trigger on the move.
 function calculateDamage() {
     const resultDiv = document.getElementById('dmg-result');
     if (!resultDiv) return;
@@ -1580,36 +1641,64 @@ function calculateDamage() {
 
     const moveType = findMoveType(moveName);
 
-    // Pick the attacker's scaling stat off the move's "scale" field
-    // (falls back to ATK if it isn't recognizably magical).
-    const scaleStat = (moveObj.scale || 'ATK').toUpperCase().includes('MAG') ? 'MAG' : 'ATK';
-    const atkStatEl = document.getElementById(`${scaleStat}-result-${atkNum}`);
-    const atkStat = atkStatEl ? (parseInt(atkStatEl.innerText) || 0) : 0;
+    // Offensive stat: move's "scale" field tells us which stat to use.
+    const scaleField = (moveObj.scale || 'ATK').toUpperCase();
+    let offStatKey = 'ATK';
+    ['ATK', 'MAG', 'DEF', 'RES', 'SPD'].forEach(k => {
+        if (scaleField.includes(k)) offStatKey = k;
+    });
 
-    // Look up the defender's house types straight from monData so this
-    // works even if the on-screen house inputs are hidden.
-    const defMonName = document.getElementById(`monSelect-${defNum}`)?.value;
-    const defSparkly = document.querySelector(`.slot:nth-child(${defNum}) .sparkle-checkbox`)?.checked;
-    let defTypes = [];
-    if (defMonName && monData[defMonName]) {
-        const defData = defSparkly ? monData[defMonName].sparkly : monData[defMonName].normal;
-        defTypes = (defData.houses || []).filter(h => h);
+    // Defensive stat: physical moves hit DEF, magical moves hit RES.
+    const isMagical = (moveObj.pm || '').toUpperCase().startsWith('M');
+    const defStatKey = isMagical ? 'RES' : 'DEF';
+
+    const atkStats = getSlotStats(atkNum);
+    const defStats = getSlotStats(defNum);
+    const offensiveStat = atkStats[offStatKey] || 0;
+    const defensiveStat = defStats[defStatKey] || 0;
+
+    // Type effectiveness (existing chart-based multiplier).
+    const defTypes = getSlotTypes(defNum);
+    const houseMultiplier = getMultiplier(moveType, defTypes);
+
+    // STAB: does the attacker's own house list include the move's house?
+    const atkTypes = getSlotTypes(atkNum);
+    const stabMultiplier = (moveType && atkTypes.includes(moveType)) ? 1.25 : 1.0;
+
+    const modifiers = {
+        forceCrit: document.getElementById('dmg-crit')?.checked || false,
+        shieldRipper: document.getElementById('dmg-shieldripper')?.checked || false,
+        reductionPercent: parseFloat(document.getElementById('dmg-reduction')?.value) || 0,
+        bonusDamagePercent: parseFloat(document.getElementById('dmg-bonus')?.value) || 0,
+        defTokens: parseFloat(document.getElementById('dmg-tokens')?.value) || 0
+    };
+
+    const power = parseFloat(moveObj.power) || 0;
+    const hits = parseInt(moveObj.trigger) || 1;
+
+    let total = 0;
+    let anyCrit = false;
+    const perHit = [];
+
+    for (let i = 0; i < hits; i++) {
+        const result = calcOneHit(offensiveStat, defensiveStat, power, houseMultiplier, stabMultiplier, modifiers);
+        perHit.push(result.damage);
+        total += result.damage;
+        if (result.didCrit) anyCrit = true;
     }
 
-    const multiplier = getMultiplier(moveType, defTypes);
-    const power = parseFloat(moveObj.power) || 0;
-    const rawDamage = Math.round(power * (atkStat / 100) * multiplier);
-
     let effectivenessNote = "Neutral";
-    if (multiplier > 1) effectivenessNote = "Super effective";
-    else if (multiplier < 1 && multiplier > 0) effectivenessNote = "Not very effective";
-    else if (multiplier === 0) effectivenessNote = "No effect";
+    if (houseMultiplier > 1) effectivenessNote = "Super effective";
+    else if (houseMultiplier < 1 && houseMultiplier > 0) effectivenessNote = "Not very effective";
+    else if (houseMultiplier === 0) effectivenessNote = "No effect";
 
     resultDiv.innerHTML = `
-        <span class="dmg-result-value"><strong>${rawDamage}</strong></span> damage
+        <span class="dmg-result-value"><strong>${total}</strong></span> damage
+        ${hits > 1 ? `<span style="font-size:12px;"> (${hits} hits: ${perHit.join(' + ')})</span>` : ''}
+        ${anyCrit ? '<br><span style="color:#e74c3c;">CRIT</span>' : ''}
         <br><span style="font-size:12px;">
             ${moveName} (${moveType || 'Unknown'}) vs ${defTypes.join('/') || 'no type'}
-            &mdash; x${multiplier} (${effectivenessNote})
+            &mdash; x${houseMultiplier} (${effectivenessNote})${stabMultiplier > 1 ? ' | STAB x1.25' : ''}
         </span>
     `;
 }
