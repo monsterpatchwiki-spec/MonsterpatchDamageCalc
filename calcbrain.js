@@ -1476,6 +1476,35 @@ function importSquad() {
 
 // --- 4. DAMAGE CALCULATION ZONE ---
 
+// Structured, damage-relevant effects for a subset of passiveData entries.
+// passiveData itself is just display text, so this is a parallel lookup
+// used only by the damage calculator. Passives not listed here either have
+// no effect on raw damage (buffs/shields/heals/utility) or depend on
+// runtime battle state (active buffs, missing-HP%, RNG procs, "once per
+// battle" flags) that this builder doesn't track, so they're intentionally
+// left out rather than guessed at.
+const passiveEffects = {
+    "BASIC STRIKER":  { powerBonusByType: { "Normal": 20 } },
+    "LIMIT BREAK":    { powerBonusAllDamage: 20 },
+    "ELECTRIFY":      { powerBonusByMove: { "BOLT": 30 } },
+    "AUTO BOLT":      { extraTriggersByMove: { "BOLT": 1 } },
+    "LANCER":         { extraTriggersByMoveNameIncludes: { "LANCE": 1 } },
+    "CANNONEER":      { extraTriggersByMoveNameIncludes: { "CANNON": 1 } },
+    "GHOSTLY":        { extraTriggersByMoveNameIncludes: { "GHOST BREATH": 2 } },
+    "AUTO FLARE":     { extraTriggersByMoveNameIncludes: { "FLARE": 2 } },
+    "METALSMITH":     { extraTriggersByMoveNameIncludes: { "HAMMER": 2 } },
+    "SHARP TEETH":    { powerBonusByMoveNameIncludes: { "BITE": 50 } },
+    "HEAVY PUNCHER":  { damagePercentByMoveNameIncludes: { "PUNCH": 20 } },
+    "DRENCH":         { damagePercentByTypeAndTarget: { type: "Atlantian", target: "ALL ENEMIES", percent: 15 } },
+    "DRAGON EYE":     { critChanceBonusByType: { "Dragoon": 25 } },
+    "CRITICAL EYE":   { critChanceBonusByTarget: { "RANDOM ENEMY": 25 } },
+    "SOUL BLASTER":   { forceScaleStat: "RES" },
+    "BLUBBER":        { damageTakenPercent: 10 },
+    "CHUBBY":         { damageTakenPercentConditional: { percent: 15, requiresHpAbove: 50 } },
+    "MIGHTY FLUFF":   { hpMultiplier: 2 },
+    "BIG HEART":      { hpMultiplierAdd: 0.2 }
+};
+
 // Builds the inner markup for the damage calc zone: attacker/move picker,
 // defender picker, battle modifiers, and a result readout.
 function createDamageCalcZone() {
@@ -1498,13 +1527,15 @@ function createDamageCalcZone() {
                     <option value="2">Slot 2</option>
                     <option value="1">Slot 1</option>
                 </select>
+                <label>Defender HP %</label>
+                <input type="number" id="dmg-defhp" value="100" min="0" max="100" onchange="calculateDamage()">
             </div>
             <div class="dmg-col dmg-modifiers">
                 <label>MODIFIERS</label>
                 <label class="dmg-check"><input type="checkbox" id="dmg-crit" onchange="calculateDamage()"> Force Crit</label>
                 <label class="dmg-check"><input type="checkbox" id="dmg-shieldripper" onchange="calculateDamage()"> Shield Ripper</label>
-                <label class="dmg-num">Dmg Reduction % <input type="number" id="dmg-reduction" value="0" min="0" max="100" onchange="calculateDamage()"></label>
-                <label class="dmg-num">Bonus Dmg % <input type="number" id="dmg-bonus" value="0" onchange="calculateDamage()"></label>
+                <label class="dmg-num">Extra Dmg Reduction % <input type="number" id="dmg-reduction" value="0" min="0" max="100" onchange="calculateDamage()"></label>
+                <label class="dmg-num">Extra Bonus Dmg % <input type="number" id="dmg-bonus" value="0" onchange="calculateDamage()"></label>
                 <label class="dmg-num">Def. Tokens <input type="number" id="dmg-tokens" value="0" min="0" onchange="calculateDamage()"></label>
             </div>
             <div class="dmg-col">
@@ -1586,6 +1617,127 @@ function getSlotTypes(num) {
     return (data.houses || []).filter(h => h);
 }
 
+// Reads a slot's four equipped passive names (blanks filtered out).
+function getSlotPassives(num) {
+    return [1, 2, 3, 4]
+        .map(i => document.getElementById(`pass${i}-${num}`)?.value)
+        .filter(p => p);
+}
+
+// Returns false for moves that don't deal damage (heals, shields, buffs,
+// etc.), based on the move's target field (allies/self) and tag (HEAL/
+// SHIELD/BUFF/CLEANSE/REVIVE keywords), plus a zero/missing power fallback.
+// If your moveData uses different field conventions than this, adjust the
+// keyword lists below.
+function isDamagingMove(moveObj) {
+    const target = (moveObj.target || '').toUpperCase();
+    const tag = (moveObj.tag || '').toUpperCase();
+
+    const nonDamagingTargets = ['SELF', 'ALLY', 'ALLIES'];
+    const nonDamagingTags = ['HEAL', 'SHIELD', 'BUFF', 'CLEANSE', 'REVIVE'];
+
+    if (nonDamagingTargets.some(t => target.includes(t))) return false;
+    if (nonDamagingTags.some(t => tag.includes(t))) return false;
+    if (!moveObj.power || parseFloat(moveObj.power) <= 0) return false;
+
+    return true;
+}
+
+// Scans an attacker's equipped passives and returns the damage-relevant
+// bonuses that apply to this specific move: extra power, extra hit
+// triggers, a flat damage% bonus, a crit chance% bonus (informational
+// only), and an optional forced scaling-stat override (e.g. Soul Blaster).
+function computeAttackerPassiveModifiers(passiveNames, moveObj, moveName, moveType) {
+    let powerAdd = 0;
+    let extraTriggers = 0;
+    let damagePercent = 0;
+    let critChanceBonus = 0;
+    let forceScaleStat = null;
+    const upperMoveName = (moveName || '').toUpperCase();
+
+    passiveNames.forEach(name => {
+        const eff = passiveEffects[name];
+        if (!eff) return;
+
+        if (eff.powerBonusByType && eff.powerBonusByType[moveType]) {
+            powerAdd += eff.powerBonusByType[moveType];
+        }
+        if (eff.powerBonusAllDamage) {
+            powerAdd += eff.powerBonusAllDamage;
+        }
+        if (eff.powerBonusByMove && eff.powerBonusByMove[upperMoveName]) {
+            powerAdd += eff.powerBonusByMove[upperMoveName];
+        }
+        if (eff.powerBonusByMoveNameIncludes) {
+            Object.entries(eff.powerBonusByMoveNameIncludes).forEach(([key, val]) => {
+                if (upperMoveName.includes(key)) powerAdd += val;
+            });
+        }
+        if (eff.extraTriggersByMove && eff.extraTriggersByMove[upperMoveName]) {
+            extraTriggers += eff.extraTriggersByMove[upperMoveName];
+        }
+        if (eff.extraTriggersByMoveNameIncludes) {
+            Object.entries(eff.extraTriggersByMoveNameIncludes).forEach(([key, val]) => {
+                if (upperMoveName.includes(key)) extraTriggers += val;
+            });
+        }
+        if (eff.damagePercentByMoveNameIncludes) {
+            Object.entries(eff.damagePercentByMoveNameIncludes).forEach(([key, val]) => {
+                if (upperMoveName.includes(key)) damagePercent += val;
+            });
+        }
+        if (eff.damagePercentByTypeAndTarget) {
+            const d = eff.damagePercentByTypeAndTarget;
+            if (moveType === d.type && (moveObj.target || '').toUpperCase().includes(d.target)) {
+                damagePercent += d.percent;
+            }
+        }
+        if (eff.critChanceBonusByType && eff.critChanceBonusByType[moveType]) {
+            critChanceBonus += eff.critChanceBonusByType[moveType];
+        }
+        if (eff.critChanceBonusByTarget) {
+            Object.entries(eff.critChanceBonusByTarget).forEach(([key, val]) => {
+                if ((moveObj.target || '').toUpperCase().includes(key)) critChanceBonus += val;
+            });
+        }
+        if (eff.forceScaleStat) {
+            forceScaleStat = eff.forceScaleStat;
+        }
+    });
+
+    return { powerAdd, extraTriggers, damagePercent, critChanceBonus, forceScaleStat };
+}
+
+// Scans a defender's equipped passives and returns a flat damage-taken
+// reduction% (conditional ones, like Chubby, are checked against the
+// manual "Defender HP %" field) and an HP multiplier for the %-of-HP
+// readout (e.g. Mighty Fluff, Big Heart).
+function computeDefenderPassiveModifiers(passiveNames, defenderHpPercent) {
+    let damageTakenPercent = 0;
+    let hpMultiplier = 1;
+
+    passiveNames.forEach(name => {
+        const eff = passiveEffects[name];
+        if (!eff) return;
+
+        if (eff.damageTakenPercent) {
+            damageTakenPercent += eff.damageTakenPercent;
+        }
+        if (eff.damageTakenPercentConditional) {
+            const c = eff.damageTakenPercentConditional;
+            if (defenderHpPercent > c.requiresHpAbove) damageTakenPercent += c.percent;
+        }
+        if (eff.hpMultiplier) {
+            hpMultiplier *= eff.hpMultiplier;
+        }
+        if (eff.hpMultiplierAdd) {
+            hpMultiplier *= (1 + eff.hpMultiplierAdd);
+        }
+    });
+
+    return { damageTakenPercent, hpMultiplier };
+}
+
 // Runs the full per-hit damage formula at a fixed random-roll value
 // (0.9 = min end of variance, 1.1 = max end) and returns the damage.
 function calcOneHitAtRoll(offensiveStat, defensiveStat, movePower, houseMultiplier, stabMultiplier, modifiers, roll) {
@@ -1597,12 +1749,9 @@ function calcOneHitAtRoll(offensiveStat, defensiveStat, movePower, houseMultipli
     dmg *= stabMultiplier;
     dmg *= 1 + (modifiers.bonusDamagePercent / 100);
 
-    // Crit: forced via checkbox, since per-mon crit chance/bonus crit chance
-    // isn't tracked in monData yet.
     if (modifiers.forceCrit) {
         dmg *= 1.5; // default critDamageMultiplier
     }
-
     if (modifiers.shieldRipper) {
         dmg *= 2;
     }
@@ -1614,8 +1763,10 @@ function calcOneHitAtRoll(offensiveStat, defensiveStat, movePower, houseMultipli
 }
 
 // Computes and displays estimated min-max damage for the selected
-// attacker/move against the selected defender, running the full formula
-// once per trigger on the move, at both ends of the 0.9-1.1 random roll.
+// attacker/move against the selected defender, factoring in equipped
+// passives on both sides, then running the full formula once per trigger
+// (including passive-granted extra triggers) at both ends of the 0.9-1.1
+// random roll.
 function calculateDamage() {
     const resultDiv = document.getElementById('dmg-result');
     if (!resultDiv) return;
@@ -1635,9 +1786,15 @@ function calculateDamage() {
         return;
     }
 
+    if (!isDamagingMove(moveObj)) {
+        resultDiv.innerHTML = `<span style="font-size:12px;">${moveName} doesn't deal damage.</span>`;
+        return;
+    }
+
     const moveType = findMoveType(moveName);
 
-    // Offensive stat: move's "scale" field tells us which stat to use.
+    // Offensive stat: move's "scale" field tells us which stat to use,
+    // unless a passive (e.g. Soul Blaster) forces a different one.
     const scaleField = (moveObj.scale || 'ATK').toUpperCase();
     let offStatKey = 'ATK';
     ['ATK', 'MAG', 'DEF', 'RES', 'SPD'].forEach(k => {
@@ -1650,8 +1807,6 @@ function calculateDamage() {
 
     const atkStats = getSlotStats(atkNum);
     const defStats = getSlotStats(defNum);
-    const offensiveStat = atkStats[offStatKey] || 0;
-    const defensiveStat = defStats[defStatKey] || 0;
 
     // Type effectiveness (existing chart-based multiplier).
     const defTypes = getSlotTypes(defNum);
@@ -1661,31 +1816,45 @@ function calculateDamage() {
     const atkTypes = getSlotTypes(atkNum);
     const stabMultiplier = (moveType && atkTypes.includes(moveType)) ? 1.25 : 1.0;
 
-    const modifiers = {
+    // Passives on both sides.
+    const atkPassives = getSlotPassives(atkNum);
+    const defPassives = getSlotPassives(defNum);
+    const atkMods = computeAttackerPassiveModifiers(atkPassives, moveObj, moveName, moveType);
+
+    const defenderHpPercent = parseFloat(document.getElementById('dmg-defhp')?.value);
+    const defMods = computeDefenderPassiveModifiers(defPassives, isNaN(defenderHpPercent) ? 100 : defenderHpPercent);
+
+    const offensiveStat = atkStats[atkMods.forceScaleStat || offStatKey] || 0;
+    const defensiveStat = defStats[defStatKey] || 0;
+
+    const manualModifiers = {
         forceCrit: document.getElementById('dmg-crit')?.checked || false,
         shieldRipper: document.getElementById('dmg-shieldripper')?.checked || false,
-        reductionPercent: parseFloat(document.getElementById('dmg-reduction')?.value) || 0,
-        bonusDamagePercent: parseFloat(document.getElementById('dmg-bonus')?.value) || 0,
+        reductionPercent: (parseFloat(document.getElementById('dmg-reduction')?.value) || 0) + defMods.damageTakenPercent,
+        bonusDamagePercent: (parseFloat(document.getElementById('dmg-bonus')?.value) || 0) + atkMods.damagePercent,
         defTokens: parseFloat(document.getElementById('dmg-tokens')?.value) || 0
     };
 
-    const power = parseFloat(moveObj.power) || 0;
-    const hits = parseInt(moveObj.trigger) || 1;
+    const power = (parseFloat(moveObj.power) || 0) + atkMods.powerAdd;
+    const hits = (parseInt(moveObj.trigger) || 1) + atkMods.extraTriggers;
 
     let totalMin = 0;
     let totalMax = 0;
 
     for (let i = 0; i < hits; i++) {
-        totalMin += calcOneHitAtRoll(offensiveStat, defensiveStat, power, houseMultiplier, stabMultiplier, modifiers, 0.9);
-        totalMax += calcOneHitAtRoll(offensiveStat, defensiveStat, power, houseMultiplier, stabMultiplier, modifiers, 1.1);
+        totalMin += calcOneHitAtRoll(offensiveStat, defensiveStat, power, houseMultiplier, stabMultiplier, manualModifiers, 0.9);
+        totalMax += calcOneHitAtRoll(offensiveStat, defensiveStat, power, houseMultiplier, stabMultiplier, manualModifiers, 1.1);
     }
 
-    // % of defender's raw HP stat (does not account for HP-modifying
-    // passives like Mighty Fluff, since passives are stored as description
-    // text, not structured effects).
-    const defHP = defStats.HP || 1;
+    // % of defender's HP stat, adjusted for HP-multiplying passives
+    // (e.g. Mighty Fluff, Big Heart).
+    const defHP = (defStats.HP || 1) * defMods.hpMultiplier;
     const pctMin = ((totalMin / defHP) * 100).toFixed(1);
     const pctMax = ((totalMax / defHP) * 100).toFixed(1);
+
+    // Informational crit chance readout from passives (does not affect
+    // the min/max numbers above unless "Force Crit" is also checked).
+    const critChance = clamp(atkMods.critChanceBonus, 0, 100);
 
     let effectivenessNote = "Neutral";
     if (houseMultiplier > 1) effectivenessNote = "Super effective";
@@ -1696,7 +1865,8 @@ function calculateDamage() {
         <span class="dmg-result-value"><strong>${totalMin}-${totalMax}</strong></span> damage
         <span style="font-size:12px;"> (${pctMin}%-${pctMax}% HP)</span>
         ${hits > 1 ? `<br><span style="font-size:12px;">${hits} hits</span>` : ''}
-        ${modifiers.forceCrit ? '<br><span style="color:#e74c3c;">CRIT</span>' : ''}
+        ${manualModifiers.forceCrit ? '<br><span style="color:#e74c3c;">CRIT</span>' : ''}
+        ${critChance > 0 ? `<br><span style="font-size:12px;">Passive crit chance: +${critChance}%</span>` : ''}
         <br><span style="font-size:12px;">
             ${moveName} (${moveType || 'Unknown'}) vs ${defTypes.join('/') || 'no type'}
             &mdash; x${houseMultiplier} (${effectivenessNote})${stabMultiplier > 1 ? ' | STAB x1.25' : ''}
