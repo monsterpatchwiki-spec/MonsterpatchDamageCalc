@@ -866,6 +866,10 @@ function selectMove(i, num, moveName) {
     
     // 4. Update the description text
     updateMoveDisplay(moveName, `${i}-${num}`);
+
+    // 5. Keep the damage calc zone's move list in sync if this slot is the
+    // currently selected attacker.
+    refreshDamageMoveListIfNeeded(num);
 }
 
 function updateMoveStyle(i, num, moveName) {
@@ -986,6 +990,9 @@ for(let i = 1; i <= 4; i++) {
         document.getElementById(`passive-desc-${i}-${num}`).innerHTML = ""; // <--- THIS IS CRITICAL
     }
 }
+
+    // Damage calc zone's move dropdown depends on this slot's moves too.
+    refreshDamageMoveListIfNeeded(num);
 }
 
 function getMultiplier(attackType, defTypes) {
@@ -1119,6 +1126,10 @@ function updateSprite(num) {
         h2Wrap.style.display = "none";
         populateSlotDropdowns(num);
     }
+
+    // Attacker/defender identity in the damage calc zone may now be stale
+    // (different mon => different types/stats), so refresh its labels too.
+    refreshDamageParticipantsIfNeeded(num);
 }
 
 // --- MON DROPDOWN (searchable, with small sprite thumbnails) ---
@@ -1453,16 +1464,166 @@ function importSquad() {
                 recalcGrowthTotal(num);
                 updateStats(num);
             });
+
+            // Both slots may have changed mons/moves — refresh the damage
+            // calc zone's dropdowns to match.
+            populateDamageMoveList();
         };
         reader.readAsText(file);
     };
     input.click();
 }
 
-// --- 3. INITIALIZATION ---
+// --- 4. DAMAGE CALCULATION ZONE ---
+
+// Builds the inner markup for the damage calc zone: attacker/move picker,
+// defender picker, and a result readout. Injected into #damage-calc-zone.
+function createDamageCalcZone() {
+    return `
+        <div class="dmg-columns">
+            <div class="dmg-col">
+                <label>ATTACKER</label>
+                <select id="dmg-attacker" onchange="onDamageAttackerChange()">
+                    <option value="1">Slot 1</option>
+                    <option value="2">Slot 2</option>
+                </select>
+                <label>MOVE</label>
+                <select id="dmg-move" onchange="calculateDamage()">
+                    <option value="">No moves set</option>
+                </select>
+            </div>
+            <div class="dmg-col">
+                <label>DEFENDER</label>
+                <select id="dmg-defender" onchange="calculateDamage()">
+                    <option value="2">Slot 2</option>
+                    <option value="1">Slot 1</option>
+                </select>
+            </div>
+            <div class="dmg-col">
+                <label>&nbsp;</label>
+                <button class="btn" onclick="calculateDamage()">CALCULATE</button>
+                <div class="dmg-result-box" id="dmg-result">
+                    <span style="font-size:12px;">Pick an attacker, move, and defender.</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Repopulates the "MOVE" dropdown in the damage calc zone based on whichever
+// slot is currently chosen as the attacker.
+function populateDamageMoveList() {
+    const attackerSel = document.getElementById('dmg-attacker');
+    const moveSel = document.getElementById('dmg-move');
+    if (!attackerSel || !moveSel) return;
+
+    const atkNum = attackerSel.value;
+    const moves = [1, 2, 3, 4]
+        .map(i => document.getElementById(`move${i}-${atkNum}`)?.value)
+        .filter(m => m);
+
+    moveSel.innerHTML = moves.length
+        ? moves.map(m => `<option value="${m}">${m}</option>`).join('')
+        : `<option value="">No moves set</option>`;
+}
+
+// Called whenever the attacker dropdown changes.
+function onDamageAttackerChange() {
+    populateDamageMoveList();
+    calculateDamage();
+}
+
+// Called from populateSlotDropdowns()/selectMove() so the damage calc
+// zone's move list stays in sync if the slot being edited is the current
+// attacker.
+function refreshDamageMoveListIfNeeded(num) {
+    const attackerSel = document.getElementById('dmg-attacker');
+    if (!attackerSel) return; // zone not built yet
+    if (attackerSel.value == num) {
+        populateDamageMoveList();
+        calculateDamage();
+    }
+}
+
+// Called from updateSprite() so a mon swap on either slot refreshes the
+// damage calc result (types/stats may have changed).
+function refreshDamageParticipantsIfNeeded(num) {
+    const attackerSel = document.getElementById('dmg-attacker');
+    const defenderSel = document.getElementById('dmg-defender');
+    if (!attackerSel || !defenderSel) return; // zone not built yet
+    if (attackerSel.value == num) populateDamageMoveList();
+    if (attackerSel.value == num || defenderSel.value == num) calculateDamage();
+}
+
+// Computes and displays estimated damage for the selected attacker/move
+// against the selected defender, using the same base stats (via the
+// *-result-N stat spans) and type effectiveness chart (getMultiplier) as
+// the rest of the builder.
+function calculateDamage() {
+    const resultDiv = document.getElementById('dmg-result');
+    if (!resultDiv) return;
+
+    const atkNum = document.getElementById('dmg-attacker').value;
+    const defNum = document.getElementById('dmg-defender').value;
+    const moveName = document.getElementById('dmg-move').value;
+
+    if (!moveName) {
+        resultDiv.innerHTML = `<span style="font-size:12px;">Pick an attacker, move, and defender.</span>`;
+        return;
+    }
+
+    const moveObj = findMoveObject(moveName);
+    if (!moveObj) {
+        resultDiv.innerHTML = `<span style="font-size:12px;">Move data not found.</span>`;
+        return;
+    }
+
+    const moveType = findMoveType(moveName);
+
+    // Pick the attacker's scaling stat off the move's "scale" field
+    // (falls back to ATK if it isn't recognizably magical).
+    const scaleStat = (moveObj.scale || 'ATK').toUpperCase().includes('MAG') ? 'MAG' : 'ATK';
+    const atkStatEl = document.getElementById(`${scaleStat}-result-${atkNum}`);
+    const atkStat = atkStatEl ? (parseInt(atkStatEl.innerText) || 0) : 0;
+
+    // Look up the defender's house types straight from monData so this
+    // works even if the on-screen house inputs are hidden.
+    const defMonName = document.getElementById(`monSelect-${defNum}`)?.value;
+    const defSparkly = document.querySelector(`.slot:nth-child(${defNum}) .sparkle-checkbox`)?.checked;
+    let defTypes = [];
+    if (defMonName && monData[defMonName]) {
+        const defData = defSparkly ? monData[defMonName].sparkly : monData[defMonName].normal;
+        defTypes = (defData.houses || []).filter(h => h);
+    }
+
+    const multiplier = getMultiplier(moveType, defTypes);
+    const power = parseFloat(moveObj.power) || 0;
+    const rawDamage = Math.round(power * (atkStat / 100) * multiplier);
+
+    let effectivenessNote = "Neutral";
+    if (multiplier > 1) effectivenessNote = "Super effective";
+    else if (multiplier < 1 && multiplier > 0) effectivenessNote = "Not very effective";
+    else if (multiplier === 0) effectivenessNote = "No effect";
+
+    resultDiv.innerHTML = `
+        <span class="dmg-result-value"><strong>${rawDamage}</strong></span> damage
+        <br><span style="font-size:12px;">
+            ${moveName} (${moveType || 'Unknown'}) vs ${defTypes.join('/') || 'no type'}
+            &mdash; x${multiplier} (${effectivenessNote})
+        </span>
+    `;
+}
+
+// --- 5. INITIALIZATION ---
 const slotArea = document.getElementById('slot-area');
 for(let i=1; i<=2; i++) slotArea.innerHTML += createSlot(i);
 for(let i=1; i<=2; i++) recalcGrowthTotal(i);
+
+const damageCalcZone = document.getElementById('damage-calc-zone');
+if (damageCalcZone) {
+    damageCalcZone.innerHTML += createDamageCalcZone();
+    populateDamageMoveList();
+}
 
 // Close the mon dropdown when clicking outside of it
 document.addEventListener('click', (e) => {
