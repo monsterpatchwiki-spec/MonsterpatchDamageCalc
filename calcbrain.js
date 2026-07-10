@@ -1567,10 +1567,6 @@ function clamp(val, min, max) {
     return Math.min(max, Math.max(min, val));
 }
 
-function randRange(min, max) {
-    return min + Math.random() * (max - min);
-}
-
 // Reads the finished stat spans (post level/grade/growth/vibe) for a slot.
 function getSlotStats(num) {
     const stats = {};
@@ -1590,20 +1586,20 @@ function getSlotTypes(num) {
     return (data.houses || []).filter(h => h);
 }
 
-// Runs the full per-hit damage formula once and returns { damage, didCrit }.
-function calcOneHit(offensiveStat, defensiveStat, movePower, houseMultiplier, stabMultiplier, modifiers) {
+// Runs the full per-hit damage formula at a fixed random-roll value
+// (0.9 = min end of variance, 1.1 = max end) and returns the damage.
+function calcOneHitAtRoll(offensiveStat, defensiveStat, movePower, houseMultiplier, stabMultiplier, modifiers, roll) {
     const scaledPower = movePower * 0.015;
     let dmg = (offensiveStat * scaledPower) + 2;
     dmg *= 80 / (80 + defensiveStat);
-    dmg *= randRange(0.9, 1.1);
+    dmg *= roll;
     dmg *= houseMultiplier;
     dmg *= stabMultiplier;
     dmg *= 1 + (modifiers.bonusDamagePercent / 100);
 
     // Crit: forced via checkbox, since per-mon crit chance/bonus crit chance
     // isn't tracked in monData yet.
-    const didCrit = modifiers.forceCrit;
-    if (didCrit) {
+    if (modifiers.forceCrit) {
         dmg *= 1.5; // default critDamageMultiplier
     }
 
@@ -1614,12 +1610,12 @@ function calcOneHit(offensiveStat, defensiveStat, movePower, houseMultiplier, st
     dmg *= (1 - clamp(modifiers.reductionPercent, 0, 100) / 100);
     dmg *= clamp(1 - modifiers.defTokens * 0.02, 0.1, 1);
 
-    return { damage: Math.max(1, Math.round(dmg)), didCrit };
+    return Math.max(1, Math.round(dmg));
 }
 
-// Computes and displays estimated damage for the selected attacker/move
-// against the selected defender, running the full per-hit formula once
-// per trigger on the move.
+// Computes and displays estimated min-max damage for the selected
+// attacker/move against the selected defender, running the full formula
+// once per trigger on the move, at both ends of the 0.9-1.1 random roll.
 function calculateDamage() {
     const resultDiv = document.getElementById('dmg-result');
     if (!resultDiv) return;
@@ -1676,16 +1672,20 @@ function calculateDamage() {
     const power = parseFloat(moveObj.power) || 0;
     const hits = parseInt(moveObj.trigger) || 1;
 
-    let total = 0;
-    let anyCrit = false;
-    const perHit = [];
+    let totalMin = 0;
+    let totalMax = 0;
 
     for (let i = 0; i < hits; i++) {
-        const result = calcOneHit(offensiveStat, defensiveStat, power, houseMultiplier, stabMultiplier, modifiers);
-        perHit.push(result.damage);
-        total += result.damage;
-        if (result.didCrit) anyCrit = true;
+        totalMin += calcOneHitAtRoll(offensiveStat, defensiveStat, power, houseMultiplier, stabMultiplier, modifiers, 0.9);
+        totalMax += calcOneHitAtRoll(offensiveStat, defensiveStat, power, houseMultiplier, stabMultiplier, modifiers, 1.1);
     }
+
+    // % of defender's raw HP stat (does not account for HP-modifying
+    // passives like Mighty Fluff, since passives are stored as description
+    // text, not structured effects).
+    const defHP = defStats.HP || 1;
+    const pctMin = ((totalMin / defHP) * 100).toFixed(1);
+    const pctMax = ((totalMax / defHP) * 100).toFixed(1);
 
     let effectivenessNote = "Neutral";
     if (houseMultiplier > 1) effectivenessNote = "Super effective";
@@ -1693,9 +1693,10 @@ function calculateDamage() {
     else if (houseMultiplier === 0) effectivenessNote = "No effect";
 
     resultDiv.innerHTML = `
-        <span class="dmg-result-value"><strong>${total}</strong></span> damage
-        ${hits > 1 ? `<span style="font-size:12px;"> (${hits} hits: ${perHit.join(' + ')})</span>` : ''}
-        ${anyCrit ? '<br><span style="color:#e74c3c;">CRIT</span>' : ''}
+        <span class="dmg-result-value"><strong>${totalMin}-${totalMax}</strong></span> damage
+        <span style="font-size:12px;"> (${pctMin}%-${pctMax}% HP)</span>
+        ${hits > 1 ? `<br><span style="font-size:12px;">${hits} hits</span>` : ''}
+        ${modifiers.forceCrit ? '<br><span style="color:#e74c3c;">CRIT</span>' : ''}
         <br><span style="font-size:12px;">
             ${moveName} (${moveType || 'Unknown'}) vs ${defTypes.join('/') || 'no type'}
             &mdash; x${houseMultiplier} (${effectivenessNote})${stabMultiplier > 1 ? ' | STAB x1.25' : ''}
