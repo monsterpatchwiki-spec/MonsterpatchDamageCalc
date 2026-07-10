@@ -1505,9 +1505,143 @@ const passiveEffects = {
     "BIG HEART":      { hpMultiplierAdd: 0.2 }
 };
 
+// --- Battle status modifiers (per-slot toggle buttons) ---
+// Each slot (1 and 2) carries its own independent status state, since
+// either slot can be attacker or defender depending on the dropdown
+// selections above. STAT_BUFFS/STAT_BREAKS drive both the button list and
+// the multiplier math; SHELL is handled separately as a stacking dropdown.
+const STAT_BUFFS = [
+    { key: 'atkUp',  stat: 'ATK', label: 'ATK UP',  desc: 'Increase ATK by 25%.' },
+    { key: 'magUp',  stat: 'MAG', label: 'MAG UP',  desc: 'Increase MAG by 25%.' },
+    { key: 'defUp',  stat: 'DEF', label: 'DEF UP',  desc: 'Increase DEF by 25%.' },
+    { key: 'resUp',  stat: 'RES', label: 'RES UP',  desc: 'Increase RES by 25%.' },
+    { key: 'haste',  stat: 'SPD', label: 'HASTE',   desc: 'Increase SPD by 25%.' }
+];
+const STAT_BREAKS = [
+    { key: 'atkBreak', stat: 'ATK', label: 'ATK BREAK', desc: 'Decrease ATK by 25%.' },
+    { key: 'magBreak', stat: 'MAG', label: 'MAG BREAK', desc: 'Decrease MAG by 25%.' },
+    { key: 'defBreak', stat: 'DEF', label: 'DEF BREAK', desc: 'Decrease DEF by 25%.' },
+    { key: 'resBreak', stat: 'RES', label: 'RES BREAK', desc: 'Decrease RES by 25%.' },
+    { key: 'slow',     stat: 'SPD', label: 'SLOW',      desc: 'Decrease SPD by 25%.' }
+];
+const SHELL_MAX_STACKS = 25; // 25 x 2% = 50% cap
+
+function freshStatusState() {
+    const s = { shell: 0 };
+    STAT_BUFFS.forEach(b => s[b.key] = false);
+    STAT_BREAKS.forEach(b => s[b.key] = false);
+    return s;
+}
+
+const slotStatusState = {
+    1: freshStatusState(),
+    2: freshStatusState()
+};
+
+// One-time CSS injection for the status buttons / toggle buttons / shell
+// dropdown. Safe to call repeatedly; only injects once.
+function injectDamageCalcStyles() {
+    if (document.getElementById('dmg-calc-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'dmg-calc-styles';
+    style.textContent = `
+        .dmg-status-columns { display:flex; gap:16px; margin-top:14px; flex-wrap:wrap; }
+        .dmg-status-col { flex:1; min-width:160px; display:flex; flex-direction:column; gap:6px; }
+        .dmg-status-title { font-weight:bold; margin-bottom:4px; font-size:12px; opacity:0.8; }
+        .status-btn, .toggle-btn {
+            background:#2b2f36; color:#ddd; border:1px solid #444; border-radius:6px;
+            padding:6px 10px; cursor:pointer; text-align:left; font-size:13px; width:100%;
+        }
+        .status-btn:hover, .toggle-btn:hover { border-color:#888; }
+        .status-btn.active { background:#3a6ea5; border-color:#5b9bd5; color:#fff; }
+        .toggle-btn.active { background:#a53a3a; border-color:#d55b5b; color:#fff; }
+        .dmg-status-shell-label { font-size:12px; margin-top:4px; opacity:0.8; }
+        .shell-select { width:100%; padding:5px; border-radius:6px; background:#2b2f36; color:#ddd; border:1px solid #444; }
+        .btn-mini {
+            font-size:11px; padding:2px 6px; margin-left:6px; cursor:pointer;
+            background:#2b2f36; color:#ddd; border:1px solid #444; border-radius:4px;
+        }
+        .btn-mini:hover { border-color:#888; }
+    `;
+    document.head.appendChild(style);
+}
+
+function statusButtonHTML(num, def) {
+    const active = slotStatusState[num][def.key];
+    return `<button type="button" class="status-btn${active ? ' active' : ''}" id="status-${def.key}-${num}" title="${def.desc}" onclick="toggleStatus(${num}, '${def.key}')">${def.label}</button>`;
+}
+
+function buildShellOptions(num) {
+    const current = slotStatusState[num].shell;
+    let opts = '';
+    for (let i = 0; i <= SHELL_MAX_STACKS; i++) {
+        const percent = i * 2;
+        opts += `<option value="${i}"${i === current ? ' selected' : ''}>${i === 0 ? 'None' : `x${i} (${percent}% dmg reduction)`}</option>`;
+    }
+    return opts;
+}
+
+function buildStatusButtonsHTML(num) {
+    const buffButtons = STAT_BUFFS.map(s => statusButtonHTML(num, s)).join('');
+    const breakButtons = STAT_BREAKS.map(s => statusButtonHTML(num, s)).join('');
+    return `
+        ${buffButtons}
+        ${breakButtons}
+        <label class="dmg-status-shell-label">SHELL (dmg reduction, max 50%)</label>
+        <select id="shell-${num}" class="shell-select" onchange="onShellChange(${num})">
+            ${buildShellOptions(num)}
+        </select>
+    `;
+}
+
+// Called by a status button. Flips that status on/off for the given slot
+// and recalculates.
+function toggleStatus(num, key) {
+    slotStatusState[num][key] = !slotStatusState[num][key];
+    const btn = document.getElementById(`status-${key}-${num}`);
+    if (btn) btn.classList.toggle('active', slotStatusState[num][key]);
+    calculateDamage();
+}
+
+// Called by the SHELL dropdown for a given slot.
+function onShellChange(num) {
+    const sel = document.getElementById(`shell-${num}`);
+    slotStatusState[num].shell = sel ? (parseInt(sel.value) || 0) : 0;
+    calculateDamage();
+}
+
+// Generic toggle for the Force Crit / Shield Ripper buttons (replaces the
+// old checkboxes). Adds/removes the .active class and recalculates.
+function toggleModBtn(id) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.classList.toggle('active');
+    calculateDamage();
+}
+
+function isModBtnActive(id) {
+    const btn = document.getElementById(id);
+    return !!btn && btn.classList.contains('active');
+}
+
+// Returns the ATK/MAG/DEF/RES/SPD multipliers (from UP + BREAK toggles)
+// and the SHELL damage-reduction% for a given slot.
+function getStatusModifiersForSlot(num) {
+    const s = slotStatusState[num] || freshStatusState();
+    return {
+        ATK: (s.atkUp ? 1.25 : 1) * (s.atkBreak ? 0.75 : 1),
+        MAG: (s.magUp ? 1.25 : 1) * (s.magBreak ? 0.75 : 1),
+        DEF: (s.defUp ? 1.25 : 1) * (s.defBreak ? 0.75 : 1),
+        RES: (s.resUp ? 1.25 : 1) * (s.resBreak ? 0.75 : 1),
+        SPD: (s.haste ? 1.25 : 1) * (s.slow ? 0.75 : 1),
+        shellPercent: (s.shell || 0) * 2
+    };
+}
+
 // Builds the inner markup for the damage calc zone: attacker/move picker,
-// defender picker, battle modifiers, and a result readout.
+// defender picker, battle modifiers, status buttons, and a result readout.
 function createDamageCalcZone() {
+    injectDamageCalcStyles();
     return `
         <div class="dmg-columns">
             <div class="dmg-col">
@@ -1523,17 +1657,17 @@ function createDamageCalcZone() {
             </div>
             <div class="dmg-col">
                 <label>DEFENDER</label>
-                <select id="dmg-defender" onchange="calculateDamage()">
+                <select id="dmg-defender" onchange="onDamageDefenderChange()">
                     <option value="2">Slot 2</option>
                     <option value="1">Slot 1</option>
                 </select>
-                <label>Defender HP %</label>
-                <input type="number" id="dmg-defhp" value="100" min="0" max="100" onchange="calculateDamage()">
+                <label>Defender HP <button type="button" class="btn-mini" onclick="syncDefenderHP()">Sync Max HP</button></label>
+                <input type="number" id="dmg-defhp" value="0" min="0" onchange="calculateDamage()">
             </div>
             <div class="dmg-col dmg-modifiers">
                 <label>MODIFIERS</label>
-                <label class="dmg-check"><input type="checkbox" id="dmg-crit" onchange="calculateDamage()"> Force Crit</label>
-                <label class="dmg-check"><input type="checkbox" id="dmg-shieldripper" onchange="calculateDamage()"> Shield Ripper</label>
+                <button type="button" class="toggle-btn" id="dmg-crit" onclick="toggleModBtn('dmg-crit')">Force Crit</button>
+                <button type="button" class="toggle-btn" id="dmg-shieldripper" onclick="toggleModBtn('dmg-shieldripper')">Shield Ripper</button>
                 <label class="dmg-num">Extra Dmg Reduction % <input type="number" id="dmg-reduction" value="0" min="0" max="100" onchange="calculateDamage()"></label>
                 <label class="dmg-num">Extra Bonus Dmg % <input type="number" id="dmg-bonus" value="0" onchange="calculateDamage()"></label>
                 <label class="dmg-num">Def. Tokens <input type="number" id="dmg-tokens" value="0" min="0" onchange="calculateDamage()"></label>
@@ -1546,7 +1680,25 @@ function createDamageCalcZone() {
                 </div>
             </div>
         </div>
+        <div class="dmg-status-columns">
+            <div class="dmg-status-col">
+                <label class="dmg-status-title">SLOT 1 STATUS</label>
+                ${buildStatusButtonsHTML(1)}
+            </div>
+            <div class="dmg-status-col">
+                <label class="dmg-status-title">SLOT 2 STATUS</label>
+                ${buildStatusButtonsHTML(2)}
+            </div>
+        </div>
     `;
+}
+
+// Call this once right after inserting createDamageCalcZone()'s HTML into
+// the DOM, so the defender HP field starts pre-filled with the current
+// defender's max HP stat instead of 0.
+function initDamageCalcZone() {
+    syncDefenderHP();
+    populateDamageMoveList();
 }
 
 // Repopulates the "MOVE" dropdown in the damage calc zone based on whichever
@@ -1572,6 +1724,25 @@ function onDamageAttackerChange() {
     calculateDamage();
 }
 
+// Called whenever the defender dropdown changes: re-syncs the raw HP field
+// to the new defender's max HP stat, then recalculates.
+function onDamageDefenderChange() {
+    syncDefenderHP();
+    calculateDamage();
+}
+
+// Pulls the currently-selected defender's HP stat straight from their
+// finished stat span and drops it into the "Defender HP" field as a raw
+// number (not a percentage). The user can then edit it down to whatever
+// their actual remaining HP is.
+function syncDefenderHP() {
+    const defenderSel = document.getElementById('dmg-defender');
+    const input = document.getElementById('dmg-defhp');
+    if (!defenderSel || !input) return;
+    const hp = getSlotStats(defenderSel.value).HP || 0;
+    input.value = hp;
+}
+
 // Called from populateSlotDropdowns()/selectMove() so the damage calc
 // zone's move list stays in sync if the slot being edited is the current
 // attacker.
@@ -1585,12 +1756,14 @@ function refreshDamageMoveListIfNeeded(num) {
 }
 
 // Called from updateSprite() so a mon swap on either slot refreshes the
-// damage calc result (types/stats may have changed).
+// damage calc result (types/stats may have changed), and re-syncs the raw
+// HP field if the swapped slot is the current defender.
 function refreshDamageParticipantsIfNeeded(num) {
     const attackerSel = document.getElementById('dmg-attacker');
     const defenderSel = document.getElementById('dmg-defender');
     if (!attackerSel || !defenderSel) return; // zone not built yet
     if (attackerSel.value == num) populateDamageMoveList();
+    if (defenderSel.value == num) syncDefenderHP();
     if (attackerSel.value == num || defenderSel.value == num) calculateDamage();
 }
 
@@ -1710,8 +1883,8 @@ function computeAttackerPassiveModifiers(passiveNames, moveObj, moveName, moveTy
 
 // Scans a defender's equipped passives and returns a flat damage-taken
 // reduction% (conditional ones, like Chubby, are checked against the
-// manual "Defender HP %" field) and an HP multiplier for the %-of-HP
-// readout (e.g. Mighty Fluff, Big Heart).
+// defender's derived HP%) and an HP multiplier for the %-of-HP readout
+// (e.g. Mighty Fluff, Big Heart).
 function computeDefenderPassiveModifiers(passiveNames, defenderHpPercent) {
     let damageTakenPercent = 0;
     let hpMultiplier = 1;
@@ -1764,9 +1937,9 @@ function calcOneHitAtRoll(offensiveStat, defensiveStat, movePower, houseMultipli
 
 // Computes and displays estimated min-max damage for the selected
 // attacker/move against the selected defender, factoring in equipped
-// passives on both sides, then running the full formula once per trigger
-// (including passive-granted extra triggers) at both ends of the 0.9-1.1
-// random roll.
+// passives on both sides plus each slot's status toggles (UP/BREAK/HASTE/
+// SLOW/SHELL), then running the full formula once per trigger (including
+// passive-granted extra triggers) at both ends of the 0.9-1.1 random roll.
 function calculateDamage() {
     const resultDiv = document.getElementById('dmg-result');
     if (!resultDiv) return;
@@ -1821,16 +1994,28 @@ function calculateDamage() {
     const defPassives = getSlotPassives(defNum);
     const atkMods = computeAttackerPassiveModifiers(atkPassives, moveObj, moveName, moveType);
 
-    const defenderHpPercent = parseFloat(document.getElementById('dmg-defhp')?.value);
-    const defMods = computeDefenderPassiveModifiers(defPassives, isNaN(defenderHpPercent) ? 100 : defenderHpPercent);
+    // Defender HP is now a raw number (their actual current HP), synced by
+    // default to their max HP stat via syncDefenderHP(). We derive a % of
+    // max HP from it purely for HP-threshold passive checks (e.g. Chubby).
+    const defMaxHpStat = defStats.HP || 1;
+    const enteredHP = parseFloat(document.getElementById('dmg-defhp')?.value);
+    const defenderHpPercent = isNaN(enteredHP) ? 100 : clamp((enteredHP / defMaxHpStat) * 100, 0, 999);
 
-    const offensiveStat = atkStats[atkMods.forceScaleStat || offStatKey] || 0;
-    const defensiveStat = defStats[defStatKey] || 0;
+    const defMods = computeDefenderPassiveModifiers(defPassives, defenderHpPercent);
+
+    // Status toggles (ATK/MAG/DEF/RES UP & BREAK, HASTE/SLOW, SHELL) for
+    // whichever slot is currently attacking/defending.
+    const atkStatusMods = getStatusModifiersForSlot(atkNum);
+    const defStatusMods = getStatusModifiersForSlot(defNum);
+
+    const usedOffKey = atkMods.forceScaleStat || offStatKey;
+    const offensiveStat = (atkStats[usedOffKey] || 0) * (atkStatusMods[usedOffKey] || 1);
+    const defensiveStat = (defStats[defStatKey] || 0) * (defStatusMods[defStatKey] || 1);
 
     const manualModifiers = {
-        forceCrit: document.getElementById('dmg-crit')?.checked || false,
-        shieldRipper: document.getElementById('dmg-shieldripper')?.checked || false,
-        reductionPercent: (parseFloat(document.getElementById('dmg-reduction')?.value) || 0) + defMods.damageTakenPercent,
+        forceCrit: isModBtnActive('dmg-crit'),
+        shieldRipper: isModBtnActive('dmg-shieldripper'),
+        reductionPercent: (parseFloat(document.getElementById('dmg-reduction')?.value) || 0) + defMods.damageTakenPercent + defStatusMods.shellPercent,
         bonusDamagePercent: (parseFloat(document.getElementById('dmg-bonus')?.value) || 0) + atkMods.damagePercent,
         defTokens: parseFloat(document.getElementById('dmg-tokens')?.value) || 0
     };
@@ -1848,12 +2033,12 @@ function calculateDamage() {
 
     // % of defender's HP stat, adjusted for HP-multiplying passives
     // (e.g. Mighty Fluff, Big Heart).
-    const defHP = (defStats.HP || 1) * defMods.hpMultiplier;
+    const defHP = defMaxHpStat * defMods.hpMultiplier;
     const pctMin = ((totalMin / defHP) * 100).toFixed(1);
     const pctMax = ((totalMax / defHP) * 100).toFixed(1);
 
     // Informational crit chance readout from passives (does not affect
-    // the min/max numbers above unless "Force Crit" is also checked).
+    // the min/max numbers above unless "Force Crit" is also active).
     const critChance = clamp(atkMods.critChanceBonus, 0, 100);
 
     let effectivenessNote = "Neutral";
