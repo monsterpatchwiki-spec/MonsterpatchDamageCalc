@@ -1538,14 +1538,15 @@ const slotStatusState = {
     2: freshStatusState()
 };
 
-// One-time CSS injection for the status buttons / toggle buttons / shell
-// dropdown. Safe to call repeatedly; only injects once.
+
 // One-time CSS injection for the status buttons / toggle buttons / shell
 // dropdown. Safe to call repeatedly; only injects once.
 function injectDamageCalcStyles() {
     if (document.getElementById('dmg-calc-styles')) return;
     const style = document.createElement('style');
     style.id = 'dmg-calc-styles';
+    const dragoonColor = typeColors["Dragoon"];
+    const normalColor = typeColors["Normal"];
     style.textContent = `
         @font-face {
             font-family: 'MyConsolas';
@@ -1558,10 +1559,26 @@ function injectDamageCalcStyles() {
         }
 
         .damage-calc-zone {
-            background-color: var(--white) !important;
+            background-color: ${normalColor} !important;
+            border-color: ${dragoonColor} !important;
+            color: ${dragoonColor} !important;
+            box-shadow: 0 0 8px ${dragoonColor};
+        }
+
+        .damage-calc-zone .btn {
+            background-color: var(--black) !important;
             border-color: var(--black) !important;
             color: var(--white) !important;
-            box-shadow: 0 0 8px var(--black);
+        }
+
+        .damage-calc-zone .dmg-result-box,
+        .damage-calc-zone .dmg-result-box * {
+            color: ${dragoonColor} !important;
+        }
+
+        .damage-calc-zone .dmg-status-shell-label,
+        .damage-calc-zone .dmg-status-title {
+            color: ${dragoonColor} !important;
         }
 
         .dmg-status-columns { display:flex; gap:16px; margin-top:14px; flex-wrap:wrap; }
@@ -1569,9 +1586,9 @@ function injectDamageCalcStyles() {
         .dmg-status-title { font-weight:bold; margin-bottom:4px; font-size:12px; opacity:0.8; }
 
         .status-btn, .toggle-btn {
-            background: var(--white);
-            color: var(--black);
-            border: 1px solid var(--black);
+            background: ${normalColor};
+            color: ${dragoonColor};
+            border: 1px solid ${dragoonColor};
             border-radius: 6px;
             padding: 6px 10px;
             cursor: pointer;
@@ -1580,22 +1597,22 @@ function injectDamageCalcStyles() {
             width: 100%;
         }
         .status-btn:hover, .toggle-btn:hover { opacity: 0.8; }
-        .status-btn.active { background: var(--black); border-color: var(--black); color: var(--white); }
-        .toggle-btn.active { background: var(--black); border-color: var(--black); color: var(--white); }
+        .status-btn.active { background: ${dragoonColor}; border-color: ${dragoonColor}; color: ${normalColor}; }
+        .toggle-btn.active { background: ${dragoonColor}; border-color: ${dragoonColor}; color: ${normalColor}; }
 
         .dmg-status-shell-label { font-size:12px; margin-top:4px; opacity:0.8; }
         .shell-select {
             width:100%; padding:5px; border-radius:6px;
-            background: var(--white);
-            color: var(--black);
-            border: 1px solid var(--black);
+            background: ${normalColor};
+            color: ${dragoonColor};
+            border: 1px solid ${dragoonColor};
         }
 
         .btn-mini {
             font-size:11px; padding:2px 6px; margin-left:6px; cursor:pointer;
-            background: var(--white);
-            color: var(--black);
-            border: 1px solid var(--black);
+            background: ${normalColor};
+            color: ${dragoonColor};
+            border: 1px solid ${dragoonColor};
             border-radius:4px;
         }
         .btn-mini:hover { opacity: 0.8; }
