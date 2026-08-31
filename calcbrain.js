@@ -1558,7 +1558,7 @@ function injectDamageCalcStyles() {
         }
 
         .damage-calc-zone {
-            background-color: transparent !important;
+            background-color: var(--white) !important;
             border-color: var(--black) !important;
             color: var(--white) !important;
             box-shadow: 0 0 8px var(--black);
