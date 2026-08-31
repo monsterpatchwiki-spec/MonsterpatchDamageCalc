@@ -1545,6 +1545,21 @@ function injectDamageCalcStyles() {
     const style = document.createElement('style');
     style.id = 'dmg-calc-styles';
     style.textContent = `
+        @font-face {
+            font-family: 'MyConsolas';
+            src: url('https://cdn.jsdelivr.net/gh/monsterpatchwiki-spec/font@main/consolas.ttf') format('truetype');
+        }
+
+        .damage-calc-zone,
+        .damage-calc-zone * {
+            font-family: 'MyConsolas', 'Consolas', monospace;
+        }
+
+        .damage-calc-zone {
+            background-color: transparent !important;
+            border-color: var(--black) !important;
+        }
+
         .dmg-status-columns { display:flex; gap:16px; margin-top:14px; flex-wrap:wrap; }
         .dmg-status-col { flex:1; min-width:160px; display:flex; flex-direction:column; gap:6px; }
         .dmg-status-title { font-weight:bold; margin-bottom:4px; font-size:12px; opacity:0.8; }
