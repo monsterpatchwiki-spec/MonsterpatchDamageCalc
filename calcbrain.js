@@ -1558,6 +1558,8 @@ function injectDamageCalcStyles() {
         .damage-calc-zone {
             background-color: transparent !important;
             border-color: var(--black) !important;
+            color: var(--white) !important;
+            box-shadow: 0 0 8px var(--black);
         }
 
         .dmg-status-columns { display:flex; gap:16px; margin-top:14px; flex-wrap:wrap; }
