@@ -1544,77 +1544,27 @@ function injectDamageCalcStyles() {
     if (document.getElementById('dmg-calc-styles')) return;
     const style = document.createElement('style');
     style.id = 'dmg-calc-styles';
-    const dragoonColor = typeColors["Dragoon"];
     style.textContent = `
-        @font-face {
-            font-family: 'MyConsolas';
-            src: url('https://cdn.jsdelivr.net/gh/monsterpatchwiki-spec/font@main/consolas.ttf') format('truetype');
-        }
-
-        #damage-calc-zone,
-        #damage-calc-zone * {
-            font-family: 'MyConsolas', 'Consolas', monospace;
-        }
-
-        #damage-calc-zone {
-            background: transparent;
-            border: 2px solid ${"Normal" in typeColors ? typeColors["Normal"] : "#342420"};
-            border-radius: 10px;
-            padding: 14px;
-        }
-
         .dmg-status-columns { display:flex; gap:16px; margin-top:14px; flex-wrap:wrap; }
-        .dmg-status-col {
-            flex:1; min-width:160px; display:flex; flex-direction:column; gap:6px;
-            background: transparent;
-            border: 1px solid ${dragoonColor};
-            border-radius: 8px;
-            padding: 10px;
-        }
-        .dmg-status-title { font-weight:bold; margin-bottom:4px; font-size:12px; opacity:0.8; color: ${dragoonColor}; }
-
+        .dmg-status-col { flex:1; min-width:160px; display:flex; flex-direction:column; gap:6px; }
+        .dmg-status-title { font-weight:bold; margin-bottom:4px; font-size:12px; opacity:0.8; }
         .status-btn, .toggle-btn {
-            background: transparent;
-            color: #ddd;
-            border: 1px solid ${dragoonColor};
-            border-radius: 6px;
-            padding: 6px 10px;
-            cursor: pointer;
-            text-align: left;
-            font-size: 13px;
-            width: 100%;
+            background:#2b2f36; color:#ddd; border:1px solid #444; border-radius:6px;
+            padding:6px 10px; cursor:pointer; text-align:left; font-size:13px; width:100%;
         }
-        .status-btn:hover, .toggle-btn:hover { border-color: #fff; }
-        .status-btn.active { background: ${dragoonColor}55; border-color: ${dragoonColor}; color:#fff; }
-        .toggle-btn.active { background: #a53a3a55; border-color:#d55b5b; color:#fff; }
-
+        .status-btn:hover, .toggle-btn:hover { border-color:#888; }
+        .status-btn.active { background:#3a6ea5; border-color:#5b9bd5; color:#fff; }
+        .toggle-btn.active { background:#a53a3a; border-color:#d55b5b; color:#fff; }
         .dmg-status-shell-label { font-size:12px; margin-top:4px; opacity:0.8; }
-        .shell-select {
-            width:100%; padding:5px; border-radius:6px;
-            background: transparent;
-            color:#ddd;
-            border: 1px solid ${dragoonColor};
-        }
-
+        .shell-select { width:100%; padding:5px; border-radius:6px; background:#2b2f36; color:#ddd; border:1px solid #444; }
         .btn-mini {
             font-size:11px; padding:2px 6px; margin-left:6px; cursor:pointer;
-            background: transparent;
-            color:#ddd;
-            border: 1px solid ${dragoonColor};
-            border-radius:4px;
+            background:#2b2f36; color:#ddd; border:1px solid #444; border-radius:4px;
         }
-        .btn-mini:hover { border-color:#fff; }
-
-        .dmg-result-box {
-            background: transparent;
-            border: 1px solid ${dragoonColor};
-            border-radius: 8px;
-            padding: 10px;
-        }
+        .btn-mini:hover { border-color:#888; }
     `;
     document.head.appendChild(style);
 }
- 
 
 function statusButtonHTML(num, def) {
     const active = slotStatusState[num][def.key];
