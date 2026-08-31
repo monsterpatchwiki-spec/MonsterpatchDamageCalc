@@ -1540,6 +1540,8 @@ const slotStatusState = {
 
 // One-time CSS injection for the status buttons / toggle buttons / shell
 // dropdown. Safe to call repeatedly; only injects once.
+// One-time CSS injection for the status buttons / toggle buttons / shell
+// dropdown. Safe to call repeatedly; only injects once.
 function injectDamageCalcStyles() {
     if (document.getElementById('dmg-calc-styles')) return;
     const style = document.createElement('style');
@@ -1565,20 +1567,38 @@ function injectDamageCalcStyles() {
         .dmg-status-columns { display:flex; gap:16px; margin-top:14px; flex-wrap:wrap; }
         .dmg-status-col { flex:1; min-width:160px; display:flex; flex-direction:column; gap:6px; }
         .dmg-status-title { font-weight:bold; margin-bottom:4px; font-size:12px; opacity:0.8; }
+
         .status-btn, .toggle-btn {
-            background:#2b2f36; color:#ddd; border:1px solid #444; border-radius:6px;
-            padding:6px 10px; cursor:pointer; text-align:left; font-size:13px; width:100%;
+            background: var(--white);
+            color: var(--black);
+            border: 1px solid var(--black);
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 13px;
+            width: 100%;
         }
-        .status-btn:hover, .toggle-btn:hover { border-color:#888; }
-        .status-btn.active { background:#3a6ea5; border-color:#5b9bd5; color:#fff; }
-        .toggle-btn.active { background:#a53a3a; border-color:#d55b5b; color:#fff; }
+        .status-btn:hover, .toggle-btn:hover { opacity: 0.8; }
+        .status-btn.active { background: var(--black); border-color: var(--black); color: var(--white); }
+        .toggle-btn.active { background: var(--black); border-color: var(--black); color: var(--white); }
+
         .dmg-status-shell-label { font-size:12px; margin-top:4px; opacity:0.8; }
-        .shell-select { width:100%; padding:5px; border-radius:6px; background:#2b2f36; color:#ddd; border:1px solid #444; }
+        .shell-select {
+            width:100%; padding:5px; border-radius:6px;
+            background: var(--white);
+            color: var(--black);
+            border: 1px solid var(--black);
+        }
+
         .btn-mini {
             font-size:11px; padding:2px 6px; margin-left:6px; cursor:pointer;
-            background:#2b2f36; color:#ddd; border:1px solid #444; border-radius:4px;
+            background: var(--white);
+            color: var(--black);
+            border: 1px solid var(--black);
+            border-radius:4px;
         }
-        .btn-mini:hover { border-color:#888; }
+        .btn-mini:hover { opacity: 0.8; }
     `;
     document.head.appendChild(style);
 }
