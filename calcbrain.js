@@ -1558,7 +1558,7 @@ function injectDamageCalcStyles() {
 
         #damage-calc-zone {
             background: transparent;
-            border: 2px solid ${dragoonColor};
+            border: 2px solid ${"Normal" in typeColors ? typeColors["Normal"] : "#342420"};
             border-radius: 10px;
             padding: 14px;
         }
@@ -1614,6 +1614,7 @@ function injectDamageCalcStyles() {
     `;
     document.head.appendChild(style);
 }
+ 
 
 function statusButtonHTML(num, def) {
     const active = slotStatusState[num][def.key];
