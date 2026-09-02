@@ -1488,7 +1488,7 @@ const passiveEffects = {
     "LIMIT BREAK":    { powerBonusAllDamage: 20 },
     "ELECTRIFY":      { powerBonusByMove: { "BOLT": 30 } },
     "AUTO BOLT":      { extraTriggersByMove: { "BOLT": 1 } },
-    "MORE SPORE":      { extraTriggersByMove: { "SPORE": 2 } },
+    "MORE SPORE":      { extraTriggersByMove: { "SPORES": 2 } },
     "LANCER":         { extraTriggersByMoveNameIncludes: { "LANCE": 1 } },
     "CANNONEER":      { extraTriggersByMoveNameIncludes: { "CANNON": 1 } },
     "GHOSTLY":        { extraTriggersByMoveNameIncludes: { "GHOST BREATH": 2 } },
