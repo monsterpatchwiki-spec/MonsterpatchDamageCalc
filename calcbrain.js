@@ -1725,7 +1725,6 @@ function createDamageCalcZone() {
                 <button type="button" class="toggle-btn" id="dmg-shieldripper" onclick="toggleModBtn('dmg-shieldripper')">Shield Ripper</button>
                 <label class="dmg-num">Extra Dmg Reduction % <input type="number" id="dmg-reduction" value="0" min="0" max="100" onchange="calculateDamage()"></label>
                 <label class="dmg-num">Extra Bonus Dmg % <input type="number" id="dmg-bonus" value="0" onchange="calculateDamage()"></label>
-                <label class="dmg-num">Def. Tokens <input type="number" id="dmg-tokens" value="0" min="0" onchange="calculateDamage()"></label>
             </div>
             <div class="dmg-col">
                 <label>&nbsp;</label>
