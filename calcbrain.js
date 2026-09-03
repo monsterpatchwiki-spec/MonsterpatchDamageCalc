@@ -1483,7 +1483,7 @@ function importSquad() {
 // runtime battle state (active buffs, missing-HP%, RNG procs, "once per
 // battle" flags) that this builder doesn't track, so they're intentionally
 // left out rather than guessed at.
-const passiveEffects = {
+const passiveEffects= {
     "BASIC STRIKER":  { powerBonusByType: { "Normal": 20 } },
     "LIMIT BREAK":    { powerBonusAllDamage: 20 },
     "ELECTRIFY":      { powerBonusByMove: { "BOLT": 30 } },
@@ -1817,8 +1817,31 @@ function syncDefenderHP() {
     const defenderSel = document.getElementById('dmg-defender');
     const input = document.getElementById('dmg-defhp');
     if (!defenderSel || !input) return;
-    const hp = getSlotStats(defenderSel.value).HP || 0;
-    input.value = hp;
+
+    const baseHP = getSlotStats(defenderSel.value).HP || 0;
+
+    // ASSUMPTION: getSlotPassives(slotId) returns an array of passive-name strings
+    // for the selected defender. Adjust this line if your actual lookup differs.
+    const passives = (typeof getSlotPassives === 'function')
+        ? (getSlotPassives(defenderSel.value) || [])
+        : [];
+
+    let hpMultiplier = 1;
+
+    for (const passiveName of passives) {
+        const effect = passiveEffects[passiveName];
+        if (!effect) continue;
+
+        if (typeof effect.hpMultiplier === 'number') {
+            hpMultiplier *= effect.hpMultiplier;
+        }
+        if (typeof effect.hpMultiplierAdd === 'number') {
+            hpMultiplier *= (1 + effect.hpMultiplierAdd);
+        }
+    }
+
+    const finalHP = Math.round(baseHP * hpMultiplier);
+    input.value = finalHP;
 }
 
 // Called from populateSlotDropdowns()/selectMove() so the damage calc
