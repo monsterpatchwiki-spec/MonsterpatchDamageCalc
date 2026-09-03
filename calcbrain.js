@@ -2095,22 +2095,22 @@ function calculateDamage() {
     const defPassives = getSlotPassives(defNum);
     const atkMods = computeAttackerPassiveModifiers(atkPassives, moveObj, moveName, moveType);
 
-    // Compute the defender's HP multiplier from passives (MIGHTY FLUFF, BIG HEART, etc.)
-// so defMaxHpStat matches the boosted value syncDefenderHP() writes into dmg-defhp.
-let defHpMultiplier = 1;
-(defenderPassives || []).forEach(name => {
-    const eff = passiveEffects[name];
-    if (!eff) return;
-    if (typeof eff.hpMultiplier === 'number') defHpMultiplier *= eff.hpMultiplier;
-    if (typeof eff.hpMultiplierAdd === 'number') defHpMultiplier *= (1 + eff.hpMultiplierAdd);
-});
+     // Defender HP is now a raw number (their actual current HP), synced by
+    // default to their (boosted) max HP stat via syncDefenderHP(). We derive
+    // the HP multiplier from passives (Mighty Fluff, Big Heart) so the % of
+    // max HP used for HP-threshold checks (e.g. Chubby) matches that boosted
+    // max, not the raw base stat.
+    let defHpMultiplier = 1;
+    defPassives.forEach(name => {
+        const eff = passiveEffects[name];
+        if (!eff) return;
+        if (typeof eff.hpMultiplier === 'number') defHpMultiplier *= eff.hpMultiplier;
+        if (typeof eff.hpMultiplierAdd === 'number') defHpMultiplier *= (1 + eff.hpMultiplierAdd);
+    });
 
-// Defender HP is now a raw number (their actual current HP), synced by
-// default to their (boosted) max HP stat via syncDefenderHP(). We derive a %
-// of that same boosted max purely for HP-threshold passive checks (e.g. Chubby).
-const defMaxHpStat = (defStats.HP || 1) * defHpMultiplier;
-const enteredHP = parseFloat(document.getElementById('dmg-defhp')?.value);
-const defenderHpPercent = isNaN(enteredHP) ? 100 : clamp((enteredHP / defMaxHpStat) * 100, 0, 999);
+    const defMaxHpStat = (defStats.HP || 1) * defHpMultiplier;
+    const enteredHP = parseFloat(document.getElementById('dmg-defhp')?.value);
+    const defenderHpPercent = isNaN(enteredHP) ? 100 : clamp((enteredHP / defMaxHpStat) * 100, 0, 999);
 
     const defMods = computeDefenderPassiveModifiers(defPassives, defenderHpPercent);
 
@@ -2144,7 +2144,7 @@ const defenderHpPercent = isNaN(enteredHP) ? 100 : clamp((enteredHP / defMaxHpSt
 
     // % of defender's HP stat, adjusted for HP-multiplying passives
     // (e.g. Mighty Fluff, Big Heart).
-    const defHP = defMaxHpStat * defMods.hpMultiplier;
+    const defHP = defMaxHpStat;
     const pctMin = ((totalMin / defHP) * 100).toFixed(1);
     const pctMax = ((totalMax / defHP) * 100).toFixed(1);
 
