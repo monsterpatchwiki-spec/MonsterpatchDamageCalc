@@ -1503,7 +1503,9 @@ const passiveEffects = {
     "BLUBBER":        { damageTakenPercent: 10 },
     "CHUBBY":         { damageTakenPercentConditional: { percent: 15, requiresHpAbove: 50 } },
     "MIGHTY FLUFF":   { hpMultiplier: 2 },
-    "BIG HEART":      { hpMultiplierAdd: 0.2 }
+    "BIG HEART":      { hpMultiplierAdd: 0.2 },
+    "MAX BURN":       { extraTriggersByBurn: 1 },
+    "MAX POISON":     { extraTriggersByPoison: 1 }
 };
 
 // --- Battle status modifiers (per-slot toggle buttons) ---
@@ -1723,8 +1725,8 @@ function createDamageCalcZone() {
                 <label>MODIFIERS</label>
                 <button type="button" class="toggle-btn" id="dmg-crit" onclick="toggleModBtn('dmg-crit')">Force Crit</button>
                 <button type="button" class="toggle-btn" id="dmg-shieldripper" onclick="toggleModBtn('dmg-shieldripper')">Shield Ripper</button>
-                <label class="dmg-num">Extra Dmg Reduction % <input type="number" id="dmg-reduction" value="0" min="0" max="100" onchange="calculateDamage()"></label>
-                <label class="dmg-num">Extra Bonus Dmg % <input type="number" id="dmg-bonus" value="0" onchange="calculateDamage()"></label>
+               <button type="button" class="btn-poison" onclick="calculateStatusDamage('poison')">POISON DMG</button>
+    <button type="button" class="btn-burn" onclick="calculateStatusDamage('burn')">BURN DMG</button>
             </div>
             <div class="dmg-col">
                 <label>&nbsp;</label>
@@ -2110,6 +2112,54 @@ function calculateDamage() {
             ${moveName} (${moveType || 'Unknown'}) vs ${defTypes.join('/') || 'no type'}
             &mdash; x${houseMultiplier} (${effectivenessNote})${stabMultiplier > 1 ? ' | STAB x1.25' : ''}
         </span>
+    `;
+}
+
+function getStatusExtraTriggers(passiveNames, kind) {
+    const key = kind === 'poison' ? 'extraTriggersByPoison' : 'extraTriggersByBurn';
+    let extra = 0;
+    passiveNames.forEach(name => {
+        const eff = passiveEffects[name];
+        if (eff && eff[key]) extra += eff[key];
+    });
+    return extra;
+}
+
+// Click handler for the POISON DMG / BURN DMG buttons.
+// Damage is a flat 10% of the defender's max HP per tick (min 1),
+// matching Mathf.Max(1, Mathf.RoundToInt(mon.maxhp * 0.1f)).
+// Extra triggers come from the ATTACKER's passives (MAX BURN/MAX POISON),
+// since those are what applied the status in the first place.
+function calculateStatusDamage(kind) {
+    const resultDiv = document.getElementById('dmg-result');
+    if (!resultDiv) return;
+
+    const atkNum = document.getElementById('dmg-attacker').value;
+    const defNum = document.getElementById('dmg-defender').value;
+
+    const defStats = getSlotStats(defNum);
+    const maxHP = defStats.HP || 0;
+
+    if (maxHP <= 0) {
+        resultDiv.innerHTML = `<span style="font-size:12px;">Defender has no HP stat set.</span>`;
+        return;
+    }
+
+    const atkPassives = getSlotPassives(atkNum);
+    const extraTriggers = getStatusExtraTriggers(atkPassives, kind);
+
+    const perTick = Math.max(1, Math.round(maxHP * 0.1));
+    const triggers = 1 + extraTriggers;
+    const total = perTick * triggers;
+
+    const label = kind === 'poison' ? 'POISON' : 'BURN';
+    const color = kind === 'poison' ? '#874185' : '#d15c62';
+    const pct = ((total / maxHP) * 100).toFixed(1);
+
+    resultDiv.innerHTML = `
+        <span class="dmg-result-value" style="color:${color};"><strong>${total}</strong></span> ${label} damage
+        <br><span style="font-size:12px;">${perTick}/tick &times; ${triggers} trigger${triggers > 1 ? 's' : ''}${extraTriggers > 0 ? ` (MAX ${label} active)` : ''}</span>
+        <br><span style="font-size:12px;">${pct}% of max HP</span>
     `;
 }
 
