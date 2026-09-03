@@ -1619,6 +1619,28 @@ function injectDamageCalcStyles() {
             border-radius:4px;
         }
         .btn-mini:hover { opacity: 0.8; }
+        .btn-poison, .btn-burn {
+        border-radius: 6px;
+        padding: 6px 10px;
+        cursor: pointer;
+        text-align: left;
+        font-size: 13px;
+        width: 100%;
+        border: 1px solid;
+    }
+    .btn-poison:hover, .btn-burn:hover { opacity: 0.8; }
+
+    .btn-poison {
+        background: #874185;
+        border-color: #874185;
+        color: #342420;
+    }
+
+    .btn-burn {
+        background: #d15c62;
+        border-color: #d15c62;
+        color: #342420;
+    }
     `;
     document.head.appendChild(style);
 }
