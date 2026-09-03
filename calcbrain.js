@@ -2193,7 +2193,19 @@ function calculateStatusDamage(kind) {
     const defNum = document.getElementById('dmg-defender').value;
 
     const defStats = getSlotStats(defNum);
-    const maxHP = defStats.HP || 0;
+    const defPassives = getSlotPassives(defNum);
+
+    // Apply the defender's HP multiplier (Mighty Fluff, Big Heart) so
+    // poison/burn ticks are % of their actual boosted max HP.
+    let defHpMultiplier = 1;
+    defPassives.forEach(name => {
+        const eff = passiveEffects[name];
+        if (!eff) return;
+        if (typeof eff.hpMultiplier === 'number') defHpMultiplier *= eff.hpMultiplier;
+        if (typeof eff.hpMultiplierAdd === 'number') defHpMultiplier *= (1 + eff.hpMultiplierAdd);
+    });
+
+    const maxHP = (defStats.HP || 0) * defHpMultiplier;
 
     if (maxHP <= 0) {
         resultDiv.innerHTML = `<span style="font-size:12px;">Defender has no HP stat set.</span>`;
