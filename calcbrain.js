@@ -1632,13 +1632,13 @@ function injectDamageCalcStyles() {
 
     .btn-poison {
         background: #874185;
-        border-color: #874185;
+        border-color: #342420;
         color: #342420;
     }
 
     .btn-burn {
         background: #d15c62;
-        border-color: #d15c62;
+        border-color: #342420;
         color: #342420;
     }
     `;
