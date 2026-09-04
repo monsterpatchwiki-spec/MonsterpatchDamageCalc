@@ -2050,56 +2050,45 @@ function calculateDamage() {
     const moveName = document.getElementById('dmg-move').value;
 
     if (!moveName) {
-        resultDiv.innerHTML = `<span style="font-size:12px;">Pick an attacker, move, and defender.</span>`;
+        resultDiv.innerHTML = `<span style="font-size:15px;">Pick an attacker, move, and defender.</span>`;
         return;
     }
 
     const moveObj = findMoveObject(moveName);
     if (!moveObj) {
-        resultDiv.innerHTML = `<span style="font-size:12px;">Move data not found.</span>`;
+        resultDiv.innerHTML = `<span style="font-size:15px;">Move data not found.</span>`;
         return;
     }
 
     if (!isDamagingMove(moveObj)) {
-        resultDiv.innerHTML = `<span style="font-size:12px;">${moveName} doesn't deal damage.</span>`;
+        resultDiv.innerHTML = `<span style="font-size:15px;">${moveName} doesn't deal damage.</span>`;
         return;
     }
 
     const moveType = findMoveType(moveName);
 
-    // Offensive stat: move's "scale" field tells us which stat to use,
-    // unless a passive (e.g. Soul Blaster) forces a different one.
     const scaleField = (moveObj.scale || 'ATK').toUpperCase();
     let offStatKey = 'ATK';
     ['ATK', 'MAG', 'DEF', 'RES', 'SPD'].forEach(k => {
         if (scaleField.includes(k)) offStatKey = k;
     });
 
-    // Defensive stat: physical moves hit DEF, magical moves hit RES.
     const isMagical = (moveObj.pm || '').toUpperCase().startsWith('M');
     const defStatKey = isMagical ? 'RES' : 'DEF';
 
     const atkStats = getSlotStats(atkNum);
     const defStats = getSlotStats(defNum);
 
-    // Type effectiveness (existing chart-based multiplier).
     const defTypes = getSlotTypes(defNum);
     const houseMultiplier = getMultiplier(moveType, defTypes);
 
-    // STAB: does the attacker's own house list include the move's house?
     const atkTypes = getSlotTypes(atkNum);
     const stabMultiplier = (moveType && atkTypes.includes(moveType)) ? 1.25 : 1.0;
 
-    // Passives on both sides.
     const atkPassives = getSlotPassives(atkNum);
     const defPassives = getSlotPassives(defNum);
     const atkMods = computeAttackerPassiveModifiers(atkPassives, moveObj, moveName, moveType);
 
-     // Defender HP is now a raw number (their actual current HP), synced by
-    // default to their (boosted) max HP stat via syncDefenderHP(). We derive
-    // the HP multiplier from passives (Mighty Fluff, Big Heart) so the % of
-    // max HP used for HP-threshold checks (e.g. Chubby) matches that boosted
-    // max, not the raw base stat.
     let defHpMultiplier = 1;
     defPassives.forEach(name => {
         const eff = passiveEffects[name];
@@ -2110,12 +2099,11 @@ function calculateDamage() {
 
     const defMaxHpStat = (defStats.HP || 1) * defHpMultiplier;
     const enteredHP = parseFloat(document.getElementById('dmg-defhp')?.value);
-    const defenderHpPercent = isNaN(enteredHP) ? 100 : clamp((enteredHP / defMaxHpStat) * 100, 0, 999);
+    const currentHP = isNaN(enteredHP) ? defMaxHpStat : enteredHP;
+    const defenderHpPercent = clamp((currentHP / defMaxHpStat) * 100, 0, 999);
 
     const defMods = computeDefenderPassiveModifiers(defPassives, defenderHpPercent);
 
-    // Status toggles (ATK/MAG/DEF/RES UP & BREAK, HASTE/SLOW, SHELL) for
-    // whichever slot is currently attacking/defending.
     const atkStatusMods = getStatusModifiersForSlot(atkNum);
     const defStatusMods = getStatusModifiersForSlot(defNum);
 
@@ -2142,14 +2130,18 @@ function calculateDamage() {
         totalMax += calcOneHitAtRoll(offensiveStat, defensiveStat, power, houseMultiplier, stabMultiplier, manualModifiers, 1.1);
     }
 
-    // % of defender's HP stat, adjusted for HP-multiplying passives
-    // (e.g. Mighty Fluff, Big Heart).
     const defHP = defMaxHpStat;
     const pctMin = ((totalMin / defHP) * 100).toFixed(1);
     const pctMax = ((totalMax / defHP) * 100).toFixed(1);
 
-    // Informational crit chance readout from passives (does not affect
-    // the min/max numbers above unless "Force Crit" is also active).
+    // % chance to kill: linear interpolation of where the defender's
+    // CURRENT HP falls within the min-max damage roll range.
+    let killChance;
+    if (totalMin >= currentHP) killChance = 100;
+    else if (totalMax <= currentHP) killChance = 0;
+    else killChance = ((totalMax - currentHP) / (totalMax - totalMin)) * 100;
+    killChance = clamp(killChance, 0, 100);
+
     const critChance = clamp(atkMods.critChanceBonus, 0, 100);
 
     let effectivenessNote = "Neutral";
@@ -2159,11 +2151,12 @@ function calculateDamage() {
 
     resultDiv.innerHTML = `
         <span class="dmg-result-value"><strong>${totalMin}-${totalMax}</strong></span> damage
-        <span style="font-size:12px;"> (${pctMin}%-${pctMax}% HP)</span>
-        ${hits > 1 ? `<br><span style="font-size:12px;">${hits} hits</span>` : ''}
-        ${manualModifiers.forceCrit ? '<br><span style="color:#e74c3c;">CRIT</span>' : ''}
-        ${critChance > 0 ? `<br><span style="font-size:12px;">Passive crit chance: +${critChance}%</span>` : ''}
-        <br><span style="font-size:12px;">
+        <span style="font-size:15px;"> (${pctMin}%-${pctMax}% HP)</span>
+        ${hits > 1 ? `<br><span style="font-size:15px;">${hits} hits</span>` : ''}
+        ${manualModifiers.forceCrit ? '<br><span style="color:#e74c3c;font-size:15px;">CRIT</span>' : ''}
+        <br><span style="font-size:15px;">Kill chance: ${killChance.toFixed(0)}%</span>
+        ${critChance > 0 ? `<br><span style="font-size:15px;">Passive crit chance: +${critChance}%</span>` : ''}
+        <br><span style="font-size:15px;">
             ${moveName} (${moveType || 'Unknown'}) vs ${defTypes.join('/') || 'no type'}
             &mdash; x${houseMultiplier} (${effectivenessNote})${stabMultiplier > 1 ? ' | STAB x1.25' : ''}
         </span>
@@ -2195,8 +2188,6 @@ function calculateStatusDamage(kind) {
     const defStats = getSlotStats(defNum);
     const defPassives = getSlotPassives(defNum);
 
-    // Apply the defender's HP multiplier (Mighty Fluff, Big Heart) so
-    // poison/burn ticks are % of their actual boosted max HP.
     let defHpMultiplier = 1;
     defPassives.forEach(name => {
         const eff = passiveEffects[name];
@@ -2208,9 +2199,12 @@ function calculateStatusDamage(kind) {
     const maxHP = (defStats.HP || 0) * defHpMultiplier;
 
     if (maxHP <= 0) {
-        resultDiv.innerHTML = `<span style="font-size:12px;">Defender has no HP stat set.</span>`;
+        resultDiv.innerHTML = `<span style="font-size:15px;">Defender has no HP stat set.</span>`;
         return;
     }
+
+    const enteredHP = parseFloat(document.getElementById('dmg-defhp')?.value);
+    const currentHP = isNaN(enteredHP) ? maxHP : enteredHP;
 
     const atkPassives = getSlotPassives(atkNum);
     const extraTriggers = getStatusExtraTriggers(atkPassives, kind);
@@ -2219,14 +2213,17 @@ function calculateStatusDamage(kind) {
     const triggers = 1 + extraTriggers;
     const total = perTick * triggers;
 
+    const killChance = total >= currentHP ? 100 : 0;
+
     const label = kind === 'poison' ? 'POISON' : 'BURN';
     const color = kind === 'poison' ? '#874185' : '#d15c62';
     const pct = ((total / maxHP) * 100).toFixed(1);
 
     resultDiv.innerHTML = `
         <span class="dmg-result-value" style="color:${color};"><strong>${total}</strong></span> ${label} damage
-        <br><span style="font-size:12px;">${perTick}/tick &times; ${triggers} trigger${triggers > 1 ? 's' : ''}${extraTriggers > 0 ? ` (MAX ${label} active)` : ''}</span>
-        <br><span style="font-size:12px;">${pct}% of max HP</span>
+        <br><span style="font-size:15px;">${perTick}/tick &times; ${triggers} trigger${triggers > 1 ? 's' : ''}${extraTriggers > 0 ? ` (MAX ${label} active)` : ''}</span>
+        <br><span style="font-size:15px;">${pct}% of max HP</span>
+        <br><span style="font-size:15px;">Kill chance: ${killChance}%</span>
     `;
 }
 
