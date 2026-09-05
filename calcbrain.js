@@ -432,7 +432,7 @@ const passiveData = {
  "040 Dragini": { normal: { houses: ["Mystic"], moves: ["NIBBLE", "KISS", "PSIONIC", "FLARE", "ENERGY WIPE", "CRUSH", "FAERIE FIRE", "SCATHE", "MAGIC BLAST", "HARMONIZE", "AETHER HEAL", "WYRMFLARE", "DRACO BITE", "ARCANA", "HEX", "FIRE TOWER", "LIGHT SONG", "LUSTER BEAM", "STARLIGHT", "DRAGON BEAM", "GRAND AURA"], passives: ["GALEFORCE", "MANA GIFT", "ANIMATED", "CLERIC", "RES BREAKER", "SUNFLARE", "SMOLDER", "WARP SPEED", "CALM MIST", "SPELLSHIELD", "FLIGHT", "CLOUD SEED", "LAST STAND", "MAX BURN"], stats: { hp: 97, atk: 47, mag: 53, def: 53, res: 45, spd: 55 }, sprite: "assets/040_n.png" }, sparkly: { houses: ["Fireborn"], moves: ["NIBBLE", "METEOR", "SCORCH", "FLARE", "HEAT SHIELD", "CRUSH", "WILDFIRE", "SCATHE", "BLAZE BLAST", "WISPS", "INFERNO PUNCH", "WYRMFLARE", "DRACO BITE", "FIRE TOWER", "ENFLAME", "FIRE BEAM", "VOLCANO", "STARLIGHT", "DRAGON BEAM", "FIERY REIGN"], passives: ["GALEFORCE", "MANA GIFT", "ANIMATED", "CLERIC", "RES BREAKER", "SUNFLARE", "SMOLDER", "WARP SPEED", "CALM MIST", "SPELLSHIELD", "FLIGHT", "CLOUD SEED", "LAST STAND", "MAX BURN"], sprite: "assets/040_s.png" } },
  "041 Luvdra": { normal: { houses: ["Dragoon", "Mystic"], moves: ["NIBBLE", "KISS", "PSIONIC", "FLARE", "ENERGY WIPE", "CRUSH", "FAERIE FIRE", "SCATHE", "MAGIC BLAST", "HARMONIZE", "AETHER HEAL", "WYRMFLARE", "DRACO BITE", "ARCANA", "HEX", "FIRE TOWER", "LIGHT SONG", "LUSTER BEAM", "STARLIGHT", "DRAGON BEAM", "GRAND AURA"], passives: ["GALEFORCE", "MANA GIFT", "ANIMATED", "CLERIC", "RES BREAKER", "SUNFLARE", "SMOLDER", "WARP SPEED", "CALM MIST", "SPELLSHIELD", "FLIGHT", "CLOUD SEED", "LAST STAND", "MAX BURN"], stats: { hp: 134, atk: 68, mag: 69, def: 65, res: 63, spd: 56 }, sprite: "assets/041_n.png" }, sparkly: { houses: ["Atlantian", "Fireborn"], moves: ["NIBBLE", "METEOR", "SCORCH", "FLARE", "HEAT SHIELD", "CRUSH", "WILDFIRE", "SCATHE", "BLAZE BLAST", "WISPS", "INFERNO PUNCH", "WYRMFLARE", "DRACO BITE", "FIRE TOWER", "ENFLAME", "FIRE BEAM", "VOLCANO", "STARLIGHT", "DRAGON BEAM", "FIERY REIGN"], passives: ["GALEFORCE", "MANA GIFT", "ANIMATED", "CLERIC", "RES BREAKER", "SUNFLARE", "SMOLDER", "WARP SPEED", "CALM MIST", "SPELLSHIELD", "FLIGHT", "CLOUD SEED", "LAST STAND", "MAX BURN"], sprite: "assets/041_s.png" } },
  "042 Dragalia": { normal: { houses: ["Dragoon", "Mystic"], moves: ["NIBBLE", "KISS", "PSIONIC", "FLARE", "ENERGY WIPE", "CRUSH", "FAERIE FIRE", "SCATHE", "MAGIC BLAST", "HARMONIZE", "AETHER HEAL", "WYRMFLARE", "DRACO BITE", "ARCANA", "HEX", "FIRE TOWER", "LIGHT SONG", "LUSTER BEAM", "STARLIGHT", "DRAGON BEAM", "GRAND AURA"], passives: ["GALEFORCE", "MANA GIFT", "ANIMATED", "CLERIC", "RES BREAKER", "SUNFLARE", "SMOLDER", "WARP SPEED", "CALM MIST", "SPELLSHIELD", "FLIGHT", "CLOUD SEED", "LAST STAND", "MAX BURN"], stats: { hp: 184, atk: 81, mag: 96, def: 75, res: 79, spd: 74 }, sprite: "assets/042_n.png" }, sparkly: { houses: ["Atlantian", "Fireborn"], moves: ["NIBBLE", "METEOR", "SCORCH", "FLARE", "HEAT SHIELD", "CRUSH", "WILDFIRE", "SCATHE", "BLAZE BLAST", "WISPS", "INFERNO PUNCH", "WYRMFLARE", "DRACO BITE", "FIRE TOWER", "ENFLAME", "FIRE BEAM", "VOLCANO", "STARLIGHT", "DRAGON BEAM", "FIERY REIGN"], passives: ["GALEFORCE", "MANA GIFT", "ANIMATED", "CLERIC", "RES BREAKER", "SUNFLARE", "SMOLDER", "WARP SPEED", "CALM MIST", "SPELLSHIELD", "FLIGHT", "CLOUD SEED", "LAST STAND", "MAX BURN"], sprite: "assets/042_s.png" } },
- "043 Poplit": { normal: { houses: ["Fireborn", "Overgrowth"], moves: ["PUNCH", "FIREBALL", "PETAL", "BRAMBLE", "BLAZE BLAST", "WILDFIRE", "SPORES", "HEAT SHIELD", "LIGHT RAIN", "WISPS", "FIRE FLOWER", "ENDLESS VINES", "THUNDERCLAP", "LEAF STORM", "ARCANA", "ENFLAME", "HEALING WIND", "FIRE BEAM", "LEAF BEAM", "WILDGROWTH", "SEISMIC PULSE"], passives: ["REGROWTH", "SAPROLING", "SUNFLARE", "CLERIC", "QUICK SHIELD", "DARK HARVEST", "MORE SPORE", "SOUL BLASTER", "MAX POISON", "MAX BURN", "HOT HEAD", "MANA GIFT"], stats: { hp: 100, atk: 54, mag: 47, def: 48, res: 52, spd: 49 }, sprite: "assets/043_n.png" }, sparkly: { houses: ["Atlantian", "Nightwatch"], moves: ["PUNCH", "TORRENT", "MURK", "SHADOW", "AQUALUNG", "SKY CANNON", "GHOST BREATH", "WHIRL", "LIGHT RAIN", "TIDAL WAVE", "FROST PUNCH", "NIGHTMARE", "THUNDERCLAP", "DARK MATTER", "ARCANA", "DELUGE", "DARK CHOMP", "JUSTICE PUNCH", "OBLIVION", "SEISMIC PULSE"], passives: ["REGROWTH", "SAPROLING", "SUNFLARE", "CLERIC", "QUICK SHIELD", "DARK HARVEST", "MORE SPORE", "SOUL BLASTER", "MAX POISON", "MAX BURN", "HOT HEAD", "MANA GIFT"], sprite: "assets/043_s.png" } },
+ "043 Poplit": { normal: { houses: ["Fireborn", "Overgrowth"], moves: ["PUNCH", "FIREBALL", "PETAL", "BRAMBLE", "BLAZE BLAST", "WILDFIRE", "SPORES", "HEAT SHIELD", "LIGHT RAIN", "WISPS", "FIRE FLOWER", "ENDLESS VINES", "THUNDERCLAP", "LEAF STORM", "ARCANA", "ENFLAME", "HEALING WIND", "FIRE BEAM", "LEAF BEAM", "WILDGROWTH", "SEISMIC PULSE"], passives: ["REGROWTH", "SAPROLING", "SUNFLARE", "CLERIC", "QUICK SHIELD", "DARK HARVEST", "MORE SPORE", "SOUL BLASTER", "MAX POISON", "MAX BURN", "HOT HEAD", "MANA GIFT"], stats: { hp: 100, atk: 54, mag: 47, def: 48, res: 52, spd: 49 }, sprite: "assets/043_n.png" }, sparkly: { houses: ["Atlantian", "Nightwatch"], moves: ["PUNCH", "TORRENT", "MURK", "SHADOW", "AQUALUNG", "SKY CANNON", "GHOST BREATH", "WHIRL", "LIGHT RAIN", "TIDAL WAVE", "FROST PUNCH", "NIGHTMARE", "THUNDERCLAP", "DARK MATTER", "ARCANA", "DELUGE", "DARK CHOMP", "JUSTICE PUNCH", "OBLIVION", "SEISMIC PULSE"], passives: ["REGROWTH", "SAPROLING", "SUNFLARE", "CLERIC", "QUICK SHIELD", "DARK HARVEST", "MORE SPORE", " SOUL BLASTER", "MAX POISON", "MAX BURN", "HOT HEAD", "MANA GIFT"], sprite: "assets/043_s.png" } },
  "044 Emberlily": { normal: { houses: ["Fireborn", "Overgrowth"], moves: ["PUNCH", "FIREBALL", "PETAL", "BRAMBLE", "BLAZE BLAST", "WILDFIRE", "SPORES", "HEAT SHIELD", "LIGHT RAIN", "WISPS", "FIRE FLOWER", "ENDLESS VINES", "THUNDERCLAP", "LEAF STORM", "ARCANA", "ENFLAME", "HEALING WIND", "FIRE BEAM", "LEAF BEAM", "WILDGROWTH", "SEISMIC PULSE"], passives: ["REGROWTH", "SAPROLING", "SUNFLARE", "CLERIC", "QUICK SHIELD", "DARK HARVEST", "MORE SPORE", "SOUL BLASTER", "MAX POISON", "MAX BURN", "HOT HEAD", "MANA GIFT"], stats: { hp: 132, atk: 72, mag: 69, def: 63, res: 57, spd: 62 }, sprite: "assets/044_n.png" }, sparkly: { houses: ["Atlantian", "Nightwatch"], moves: ["PUNCH", "TORRENT", "MURK", "SHADOW", "AQUALUNG", "SKY CANNON", "GHOST BREATH", "WHIRL", "LIGHT RAIN", "TIDAL WAVE", "FROST PUNCH", "NIGHTMARE", "THUNDERCLAP", "DARK MATTER", "ARCANA", "DELUGE", "DARK CHOMP", "JUSTICE PUNCH", "OBLIVION", "SEISMIC PULSE"], passives: ["REGROWTH", "SAPROLING", "SUNFLARE", "CLERIC", "QUICK SHIELD", "DARK HARVEST", "MORE SPORE", "SOUL BLASTER", "MAX POISON", "MAX BURN", "HOT HEAD", "MANA GIFT"], sprite: "assets/044_s.png" } },
  "045 Flamora": { normal: { houses: ["Fireborn", "Overgrowth"], moves: ["PUNCH", "FIREBALL", "PETAL", "BRAMBLE", "BLAZE BLAST", "WILDFIRE", "SPORES", "HEAT SHIELD", "LIGHT RAIN", "WISPS", "FIRE FLOWER", "ENDLESS VINES", "THUNDERCLAP", "LEAF STORM", "ARCANA", "ENFLAME", "HEALING WIND", "FIRE BEAM", "LEAF BEAM", "WILDGROWTH", "SEISMIC PULSE"], passives: ["REGROWTH", "SAPROLING", "SUNFLARE", "CLERIC", "QUICK SHIELD", "DARK HARVEST", "MORE SPORE", "SOUL BLASTER", "MAX POISON", "MAX BURN", "HOT HEAD", "MANA GIFT"], stats: { hp: 185, atk: 81, mag: 76, def: 83, res: 72, spd: 92 }, sprite: "assets/045_n.png" }, sparkly: { houses: ["Atlantian", "Nightwatch"], moves: ["PUNCH", "TORRENT", "MURK", "SHADOW", "AQUALUNG", "SKY CANNON", "GHOST BREATH", "WHIRL", "LIGHT RAIN", "TIDAL WAVE", "FROST PUNCH", "NIGHTMARE", "THUNDERCLAP", "DARK MATTER", "ARCANA", "DELUGE", "DARK CHOMP", "JUSTICE PUNCH", "OBLIVION", "SEISMIC PULSE"], passives: ["REGROWTH", "SAPROLING", "SUNFLARE", "CLERIC", "QUICK SHIELD", "DARK HARVEST", "MORE SPORE", "SOUL BLASTER", "MAX POISON", "MAX BURN", "HOT HEAD", "MANA GIFT"], sprite: "assets/045_s.png" } },
  "046 Terrabone": { normal: { houses: ["Dragoon", "Ironclad"], moves: ["BONK", "GRIND", "GUARD UP", "BITE", "BREATH", "CRUSH", "HAMMER", "POISON BITE", "HORN", "BULWARK", "SPIKY TAIL", "DRACO BITE", "BOULDER BREAK", "WYVERN ASCENT", "SKEWER", "JUGGERNAUT", "CRUSHING JAWS", "TITAN BASH", "DRAGON BEAM", "VOLCANO", "BLIZZARD LANCE"], passives: ["STEEL SKIN", "TANK", "QUICK SHIELD", "GUARD", "DRAGON EYE", "SLUGGER", "HEAVY PLATE", "SHARP TEETH", "METALSMITH", "REGEN SCALES", "OVERGUARD", "ROCK ARMOR", "LIMIT BREAK"], stats: { hp: 94, atk: 54, mag: 57, def: 47, res: 55, spd: 43 }, sprite: "assets/046_n.png" }, sparkly: { houses: ["Nightwatch", "Whimsical"], moves: ["BONK", "SHADE", "MURK", "DANCE", "DAYDREAM", "GLITTER", "GHOST BREATH", "POISON BITE", "HORN", "NIGHTMARE", "LIGHT SHIELD", "BOULDER BREAK", "THUNDERCLAP", "SHADOW AXE", "JUGGERNAUT", "STARLIGHT", "OBLIVION", "RADIANCE", "VOLCANO", "BLIZZARD LANCE"], passives: ["STEEL SKIN", "TANK", "QUICK SHIELD", "GUARD", "DRAGON EYE", "SLUGGER", "HEAVY PLATE", "SHARP TEETH", "METALSMITH", "REGEN SCALES", "OVERGUARD", "ROCK ARMOR", "LIMIT BREAK"], sprite: "assets/046_s.png" } },
@@ -1507,6 +1507,18 @@ const passiveEffects= {
     "MAX BURN":       { extraTriggersByBurn: 1 },
     "MAX POISON":     { extraTriggersByPoison: 1 }
 };
+// Moves with a CONSUME effect, keyed by move name (uppercase).
+// powerAdd / extraTriggers apply directly to the damage formula.
+// targetNote is purely informational (can't be modeled by a single-hit calc).
+const CONSUME_TOKEN_MOVES = {
+    "DELUGE":         { token: "SHELL",     targetNote: "Targets ALL ENEMIES instead of single." },
+    "STEAM SHOOT":    { token: "SUNLIGHT",  powerAdd: 50 },
+    "FIRE BEAM":      { token: "SUNLIGHT",  powerAdd: 50 },
+    "LEAF BEAM":      { token: "LEAF",      powerAdd: 50 },
+    "ENDLESS VINES":  { token: "LEAF",      extraTriggers: 2 },
+    "OBLIVION":       { token: "DARKNESS",  powerAdd: 50 },
+    "SNEAKY STRIKES": { token: "DARKNESS",  extraTriggers: 3 }
+};
 
 // --- Battle status modifiers (per-slot toggle buttons) ---
 // Each slot (1 and 2) carries its own independent status state, since
@@ -1723,41 +1735,42 @@ function createDamageCalcZone() {
     injectDamageCalcStyles();
     return `
         <div class="dmg-columns">
-            <div class="dmg-col">
-                <label>ATTACKER</label>
-                <select id="dmg-attacker" onchange="onDamageAttackerChange()">
-                    <option value="1">Slot 1</option>
-                    <option value="2">Slot 2</option>
-                </select>
-                <label>MOVE</label>
-                <select id="dmg-move" onchange="calculateDamage()">
-                    <option value="">No moves set</option>
-                </select>
-            </div>
-            <div class="dmg-col">
-                <label>DEFENDER</label>
-                <select id="dmg-defender" onchange="onDamageDefenderChange()">
-                    <option value="2">Slot 2</option>
-                    <option value="1">Slot 1</option>
-                </select>
-                <label>Defender HP <button type="button" class="btn-mini" onclick="syncDefenderHP()">Sync Max HP</button></label>
-                <input type="number" id="dmg-defhp" value="0" min="0" onchange="calculateDamage()">
-            </div>
-            <div class="dmg-col dmg-modifiers">
-                <label>MODIFIERS</label>
-                <button type="button" class="toggle-btn" id="dmg-crit" onclick="toggleModBtn('dmg-crit')">Force Crit</button>
-                <button type="button" class="toggle-btn" id="dmg-shieldripper" onclick="toggleModBtn('dmg-shieldripper')">Shield Ripper</button>
-               <button type="button" class="btn-poison" onclick="calculateStatusDamage('poison')">POISON DMG</button>
-    <button type="button" class="btn-burn" onclick="calculateStatusDamage('burn')">BURN DMG</button>
-            </div>
-            <div class="dmg-col">
-                <label>&nbsp;</label>
-                <button class="btn" onclick="calculateDamage()">CALCULATE</button>
-                <div class="dmg-result-box" id="dmg-result">
-                    <span style="font-size:12px;">Pick an attacker, move, and defender.</span>
-                </div>
-            </div>
+    <div class="dmg-col">
+        <label>ATTACKER</label>
+        <select id="dmg-attacker" onchange="onDamageAttackerChange()">
+            <option value="1">Slot 1</option>
+            <option value="2">Slot 2</option>
+        </select>
+        <label>MOVE</label>
+        <select id="dmg-move" onchange="calculateDamage()">
+            <option value="">No moves set</option>
+        </select>
+        <button type="button" class="toggle-btn" id="dmg-consume" onclick="toggleModBtn('dmg-consume')">Consume Token</button>
+    </div>
+    <div class="dmg-col">
+        <label>DEFENDER</label>
+        <select id="dmg-defender" onchange="onDamageDefenderChange()">
+            <option value="2">Slot 2</option>
+            <option value="1">Slot 1</option>
+        </select>
+        <label>Defender HP <button type="button" class="btn-mini" onclick="syncDefenderHP()">Sync Max HP</button></label>
+        <input type="number" id="dmg-defhp" value="0" min="0" onchange="calculateDamage()">
+    </div>
+    <div class="dmg-col dmg-modifiers">
+        <label>MODIFIERS</label>
+        <button type="button" class="toggle-btn" id="dmg-crit" onclick="toggleModBtn('dmg-crit')">Force Crit</button>
+        <button type="button" class="toggle-btn" id="dmg-shieldripper" onclick="toggleModBtn('dmg-shieldripper')">Shield Ripper</button>
+        <button type="button" class="btn-poison" onclick="calculateStatusDamage('poison')">POISON DMG</button>
+        <button type="button" class="btn-burn" onclick="calculateStatusDamage('burn')">BURN DMG</button>
+    </div>
+    <div class="dmg-col">
+        <label>&nbsp;</label>
+        <button class="btn" onclick="calculateDamage()">CALCULATE</button>
+        <div class="dmg-result-box" id="dmg-result">
+            <span style="font-size:12px;">Pick an attacker, move, and defender.</span>
         </div>
+    </div>
+</div>
         <div class="dmg-status-columns">
             <div class="dmg-status-col">
                 <label class="dmg-status-title">SLOT 1 STATUS</label>
@@ -2119,8 +2132,12 @@ function calculateDamage() {
         defTokens: parseFloat(document.getElementById('dmg-tokens')?.value) || 0
     };
 
-    const power = (parseFloat(moveObj.power) || 0) + atkMods.powerAdd;
-    const hits = (parseInt(moveObj.trigger) || 1) + atkMods.extraTriggers;
+const consumeActive = isModBtnActive('dmg-consume');
+const consumeData = CONSUME_TOKEN_MOVES[(moveName || '').toUpperCase()];
+const consumeApplies = consumeActive && !!consumeData;
+
+const power = (parseFloat(moveObj.power) || 0) + atkMods.powerAdd + (consumeApplies ? (consumeData.powerAdd || 0) : 0);
+const hits = (parseInt(moveObj.trigger) || 1) + atkMods.extraTriggers + (consumeApplies ? (consumeData.extraTriggers || 0) : 0);
 
     let totalMin = 0;
     let totalMax = 0;
@@ -2159,6 +2176,8 @@ function calculateDamage() {
         <br><span style="font-size:15px;">
             ${moveName} (${moveType || 'Unknown'}) vs ${defTypes.join('/') || 'no type'}
             &mdash; x${houseMultiplier} (${effectivenessNote})${stabMultiplier > 1 ? ' | STAB x1.25' : ''}
+            ${consumeApplies ? `<br><span style="font-size:15px;color:#e67e22;">Consumed ${consumeData.token}${consumeData.targetNote ? ' — ' + consumeData.targetNote : ''}</span>` : ''}
+${consumeActive && !consumeData ? `<br><span style="font-size:15px;opacity:0.7;">${moveName} has no CONSUME effect — toggle ignored.</span>` : ''}
         </span>
     `;
 }
